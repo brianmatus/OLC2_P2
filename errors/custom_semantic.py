@@ -1,0 +1,2 @@
+class CustomSemanticError(Exception):
+    pass

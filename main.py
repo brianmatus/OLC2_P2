@@ -5,12 +5,13 @@ import analysis.lexer as lexer  # TODO for debug only
 from typing import List
 
 import errors.custom_semantic
-from returns.parse_result import ParseResult
 from analysis.parser import parser
 
-from instructions.instruction import Instruction
-from instructions.function_declaration import FunctionDeclaration
+from abstract.instruction import Instruction
 from elements.env import Environment
+
+from instructions.function_declaration import FunctionDeclaration
+
 
 from errors.lexic_error import LexicError
 from errors.semantic_error import SemanticError
@@ -29,7 +30,7 @@ def start():  # FIXME this should be replaced with frontend sending the code
     input_code: str = f.read()
     f.close()
 
-    result: ParseResult = parse_code(input_code)
+    result: dict = parse_code(input_code)
     return result
     # print("code result:")
     # print(result)
@@ -144,7 +145,8 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
             # print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
             instruction.execute(global_config.main_environment)
 
-        main_func: FunctionDeclaration = global_config.function_list.get("main")
+        # TODO main_func: FunctionDeclaration = global_config.function_list.get("main")
+        main_func = global_config.function_list.get("main")
         if main_func is None:
             error_msg = f"No se definió una función main"
             global_config.log_semantic_error(error_msg, -1, -1)
@@ -157,10 +159,10 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
             # No need to raise, they will only get ignored
             # raise SemanticError(error_msg, -1, -1)
 
-        # "Abandonen la esperanza todos los que entren aquí"
-        for instruction in main_func.instructions:
-            instruction.execute(main_func.environment)
-            _symbol_table = main_func.environment.symbol_table
+        # TODO "Abandonen la esperanza todos los que entren aquí"
+        # for instruction in main_func.instructions:
+        #     instruction.execute(main_func.environment)
+        #     _symbol_table = main_func.environment.symbol_table
 
         print("-------------------------------------------------------------------------------------------------------")
 
@@ -234,28 +236,6 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
 
 
 
-
-
-def generate_ast_tree(instruction_set: List[Instruction]) -> str:
-    return ""  # TODO this project doesn't require it
-    # instructions_father_ref = global_config.get_unique_number()
-    # ast_tree: str = f'digraph{{\n{instructions_father_ref}[label="Instructions"]\n'
-    #
-    # instructions_ast: str = generate_instruction_set_ast(instruction_set, instructions_father_ref)
-    #
-    # ast_tree += f'{instructions_ast}\n}}'
-    # return ast_tree
-
-
-def generate_instruction_set_ast(instruction_set: List[Instruction], father_ref: int) -> str :
-    _str = ''
-    instruction: Instruction
-    for instruction in instruction_set:
-        instruction_ast = instruction.ast()
-        _str += f'{instruction_ast.value}\n' \
-                f'{father_ref} -> {instruction_ast.head_ref}\n'
-
-    return _str
 
 
 # Press the green button in the gutter to run the script.
