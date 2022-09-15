@@ -8,7 +8,7 @@ import errors.custom_semantic
 from analysis.parser import parser
 
 from abstract.instruction import Instruction
-from elements.env import Environment
+from elements.c_env import Environment
 
 from instructions.function_declaration import FunctionDeclaration
 
@@ -130,7 +130,7 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
     # print("#############################################################################")
 
 
-    # print(instruction_set)
+    print(instruction_set)
 
     # Register all functions and modules
     try:
@@ -160,9 +160,9 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
             # raise SemanticError(error_msg, -1, -1)
 
         # TODO "Abandonen la esperanza todos los que entren aquí"
-        # for instruction in main_func.instructions:
-        #     instruction.execute(main_func.environment)
-        #     _symbol_table = main_func.environment.symbol_table
+        for instruction in main_func.instructions:
+            a = instruction.execute(main_func.environment)
+            _symbol_table = main_func.environment.symbol_table
 
         print("-------------------------------------------------------------------------------------------------------")
 
@@ -174,8 +174,8 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
         print(global_config.main_environment)
         print("Resulting function list:")
         # print(function_list)
-        print("Resulting symbol table:")
-        print(global_config.generate_symbol_table(instruction_set, "Main"))
+        # print("Resulting symbol table:")
+        # print(global_config.generate_symbol_table(instruction_set, "Main"))
         print("Resulting console output:")
         print("-------------------------------------------------------------------------------------------------------")
         print(global_config.console_output)
@@ -185,7 +185,7 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
             "lexic_errors": global_config.lexic_error_list,
             "syntactic_errors": global_config.syntactic_error_list,
             "semantic_errors": global_config.semantic_error_list,
-            "symbol_table": global_config.tmp_symbol_table + global_config.generate_symbol_table(instruction_set, "Main")
+            # "symbol_table": global_config.tmp_symbol_table + global_config.generate_symbol_table(instruction_set, "Main")
         }
 
         # return [global_config.lexic_error_list, global_config.syntactic_error_list,
@@ -224,7 +224,7 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
             "lexic_errors": global_config.lexic_error_list,
             "syntactic_errors": global_config.syntactic_error_list,
             "semantic_errors": global_config.semantic_error_list,
-            "symbol_table": global_config.tmp_symbol_table + global_config.generate_symbol_table(instruction_set, "Main")
+            # "symbol_table": global_config.tmp_symbol_table + global_config.generate_symbol_table(instruction_set, "Main")
         }
 
         # return [global_config.lexic_error_list,

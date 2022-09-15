@@ -1,7 +1,7 @@
 from abstract.expression import Expression
-from elements.env import Environment
+from elements.c_env import Environment
 from elements.value_tuple import ValueTuple
-from element_types.element_type import ElementType
+from element_types.c_expression_type import ExpressionType
 from returns.ast_return import ASTReturn
 
 from errors.semantic_error import SemanticError
@@ -20,7 +20,7 @@ class VariableReference(Expression):
         self._id = _id
 
     def execute(self, environment: Environment) -> ValueTuple:
-        the_symbol: Symbol = environment.recursive_get(self._id)
+        the_symbol: Symbol = environment.get_variable(self._id)
         if the_symbol is None:
             print("Variable not defined in scope")
             error_msg = f'Variable {self._id} no esta definida en el ambito actual'
@@ -28,10 +28,10 @@ class VariableReference(Expression):
             raise SemanticError(error_msg, self.line, self.column)
 
         if isinstance(the_symbol, VectorSymbol):
-            return ValueTuple(value=the_symbol.value, _type=the_symbol._type, is_mutable=the_symbol.is_mutable,
+            return ValueTuple(value=the_symbol.value, expression_type=the_symbol._type, is_mutable=the_symbol.is_mutable,
                               content_type=the_symbol.content_type, capacity=the_symbol.capacity)
 
-        return ValueTuple(value=the_symbol.value, _type=the_symbol._type, is_mutable=the_symbol.is_mutable,
+        return ValueTuple(value=the_symbol.position, expression_type=the_symbol.symbol_type, is_mutable=the_symbol.is_mutable,
                           content_type=None, capacity=None)
 
     def ast(self) -> ASTReturn:

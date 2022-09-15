@@ -1,31 +1,39 @@
 from abstract.expression import Expression
-from elements.env import Environment
+from elements.c_env import Environment
 from elements.value_tuple import ValueTuple
-from element_types.element_type import ElementType
-from returns.ast_return import ASTReturn
-import global_config
+from element_types.c_expression_type import ExpressionType
+from generator import Generator
 
 
 class Literal(Expression):
 
-    def __init__(self, value, _type: ElementType, line: int, column: int):
+    def __init__(self, value, expression_type: ExpressionType, line: int, column: int):
         super().__init__(line, column)
         self.value = value
-        self._type = _type
+        self.expression_type: ExpressionType = expression_type
 
     def execute(self, environment: Environment) -> ValueTuple:
-        return ValueTuple(self.value, self._type, is_mutable=False, content_type=self._type, capacity=None)
 
-    def ast(self) -> ASTReturn:
-        father_ref = global_config.get_unique_number()
-        value_ref = global_config.get_unique_number()
+        if self.expression_type in [ExpressionType.INT, ExpressionType.FLOAT, ExpressionType.CHAR]:
 
-        value = f'{father_ref}[label="LITERAL\\n{self._type.name}"]\n' \
-                f'{value_ref}[label="{self.value}"]\n' \
-                f'{father_ref} -> {value_ref}\n'
+            return ValueTuple(value=self.value, expression_type=self.expression_type, is_mutable=False,
+                              content_type=self.expression_type, capacity=None, is_tmp=False)
 
-        return ASTReturn(value=value, head_ref=father_ref)
+        if self.expression_type == ExpressionType.STRING_PRIMITIVE:
+            generator = Generator()
+            t = generator.new_temp()
+            generator.add_expression(t, "H", "", "")
+
+            for char in self.value:
+                generator.add_set_heap("H", str(ord(char)))
+                generator.add_next_heap()
+
+            generator.add_set_heap("H", "-1")
+
+            return ValueTuple(value=t, expression_type=self.expression_type, is_mutable=False,
+                              content_type=self.expression_type, capacity=None, is_tmp=True)
+
+        print("literal.py::ERROR! Unknown literal type")
 
     def __str__(self):
-        return f'LITERAL(val={self.value} type={self._type})'
-
+        return f'LITERAL(val={self.value} type={self.expression_type})'

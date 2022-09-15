@@ -2,7 +2,7 @@ from typing import Union, List
 
 from abstract.expression import Expression
 from abstract.instruction import Instruction
-from elements.env import Environment
+from elements.c_env import Environment
 
 
 class ConditionExpressionClause:
