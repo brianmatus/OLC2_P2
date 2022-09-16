@@ -8,19 +8,23 @@ from element_types.arithmetic_type import ArithmeticType
 import math
 
 import global_config
+from generator import Generator
 
 
 class Arithmetic(Expression):
 
-    def __init__(self, left: Expression, right: Expression, _type: ArithmeticType, line: int, column: int):
+    def __init__(self, left: Expression, right: Expression,
+                 arithmetic_type: ArithmeticType, expression_type: ExpressionType,
+                 line: int, column: int):
         super().__init__(line, column)
         self.left = left
         self.right = right
-        self._type = _type
-        self.content_type = None
+        self.arithmetic_type = arithmetic_type
+        self.expression_type = expression_type
+
 
     def __str__(self):
-        return f'Arithmetic({self.left}, {self._type.name}, {self.right}'
+        return f'Arithmetic({self.left}, {self.arithmetic_type.name}, {self.right}'
 
     def execute(self, environment: Environment) -> ValueTuple:
 
@@ -28,9 +32,10 @@ class Arithmetic(Expression):
         left: ValueTuple = self.left.execute(environment)
         right: ValueTuple = self.right.execute(environment)
 
-        self.content_type = left.content_type
+        self.expression_type = left.content_type
 
-        match self._type:
+        generator = Generator()
+        match self.arithmetic_type:
 
             case ArithmeticType.POW_INT:
 
@@ -38,26 +43,51 @@ class Arithmetic(Expression):
                     return ValueTuple(value=math.pow(left.value, right.value), expression_type=ExpressionType.INT, is_mutable=False,
                                       content_type=None, capacity=None)
 
-                error_msg = f"Operacion Aritmetica POW {left.expression_type.name} <-> {right.expression_type.name} es invalida."
+                error_msg = f"Operacion Aritmetica POW {left.expression_type.name} <->" \
+                            f"{right.expression_type.name} es invalida."
                 global_config.log_semantic_error(error_msg, self.line, self.column)
                 raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
 
             case ArithmeticType.POW_FLOAT:
-
-                if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
-                    return ValueTuple(value=math.pow(left.value, right.value), expression_type=ExpressionType.FLOAT,
-                                      is_mutable=False, content_type=None, capacity=None)
-
-                error_msg = f"Operacion Aritmetica POWF {left.expression_type.name} <-> {right.expression_type.name} es invalida."
-                global_config.log_semantic_error(error_msg, self.line, self.column)
-                raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
+                print("Not implemented in 3-address-code")
+                # if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
+                #     return ValueTuple(value=math.pow(left.value, right.value), expression_type=ExpressionType.FLOAT,
+                #                       is_mutable=False, content_type=None, capacity=None)
+                #
+                error_msg = f"Operacion Aritmetica POWF {left.expression_type.name} <->" \
+                            f"{right.expression_type.name} es invalida."
+                # global_config.log_semantic_error(error_msg, self.line, self.column)
+                # raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
 
             case ArithmeticType.SUM:
 
                 # INT
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.INT:
-                    return ValueTuple(value=left.value + right.value, expression_type=ExpressionType.INT, is_mutable=False,
-                                      content_type=None, capacity=None)
+                    new_tmp = generator.new_temp()
+                    #Both Temp
+                    if left.is_tmp and right.is_tmp:
+                        generator.code = left.generator.code
+                        generator.code = generator.code + right.generator.code
+                        generator.add_expression(new_tmp, left.value, right.value, "+")
+                        return ValueTuple(new_tmp, ExpressionType.INT, False,
+                                          generator, ExpressionType.INT, None, True)
+                    #Only one tmp
+                    if left.is_tmp:
+                        generator.code = left.generator.code
+                        generator.add_expression(new_tmp, left.value, right.value, "+")
+                        return ValueTuple(new_tmp, ExpressionType.INT, False,
+                                          generator, ExpressionType.INT, None, True)
+                    if right.is_tmp:
+                        generator.code = right.generator.code
+                        generator.add_expression(new_tmp, left.value, right.value, "+")
+                        return ValueTuple(new_tmp, ExpressionType.INT, False,
+                                          generator, ExpressionType.INT, None, True)
+
+                    # No tmps
+                    generator.add_expression(new_tmp, left.value, right.value, "+")
+
+                    return ValueTuple(new_tmp, ExpressionType.INT, False,
+                                      generator, ExpressionType.INT, None, True)
 
                 # USIZE INT(literals)
                 if left.expression_type == ExpressionType.USIZE and right.expression_type == ExpressionType.INT:
@@ -137,8 +167,31 @@ class Arithmetic(Expression):
             case ArithmeticType.MULT:
                 # INT
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.INT:
-                    return ValueTuple(value=left.value * right.value, expression_type=ExpressionType.INT, is_mutable=False,
-                                      content_type=None, capacity=None)
+                    new_tmp = generator.new_temp()
+                    # Both Temp
+                    if left.is_tmp and right.is_tmp:
+                        generator.code = left.generator.code
+                        generator.code.append(right.generator.code)
+                        generator.add_expression(new_tmp, left.value, right.value, "*")
+                        return ValueTuple(new_tmp, ExpressionType.INT, False,
+                                          generator, ExpressionType.INT, None, True)
+                    # Only one tmp
+                    if left.is_tmp:
+                        generator.code = left.generator.code
+                        generator.add_expression(new_tmp, left.value, right.value, "*")
+                        return ValueTuple(new_tmp, ExpressionType.INT, False,
+                                          generator, ExpressionType.INT, None, True)
+                    if right.is_tmp:
+                        generator.code = right.generator.code
+                        generator.add_expression(new_tmp, left.value, right.value, "*")
+                        return ValueTuple(new_tmp, ExpressionType.INT, False,
+                                          generator, ExpressionType.INT, None, True)
+
+                    # No tmps
+                    generator.add_expression(new_tmp, left.value, right.value, "*")
+
+                    return ValueTuple(new_tmp, ExpressionType.INT, False,
+                                      generator, ExpressionType.INT, None, True)
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
                     return ValueTuple(value=left.value * right.value, expression_type=ExpressionType.FLOAT, is_mutable=False,
@@ -235,14 +288,14 @@ class Arithmetic(Expression):
 
     def ast(self) -> ASTReturn:
 
-        if self._type == ArithmeticType.NEG:
+        if self.arithmetic_type == ArithmeticType.NEG:
             return self.singular_operation_ast()
         return self.two_operation_ast()
 
     def singular_operation_ast(self) -> ASTReturn:
         father_index: int = global_config.get_unique_number()
         left_ast = self.left.ast()
-        result = f'{father_index}[label="ARITHMETIC {self._type.name}"]\n' \
+        result = f'{father_index}[label="ARITHMETIC {self.arithmetic_type.name}"]\n' \
                  f'{left_ast.value}\n' \
                  f'{father_index} -> {left_ast.head_ref}\n'
         return ASTReturn(result, father_index)
@@ -251,7 +304,7 @@ class Arithmetic(Expression):
         father_index: int = global_config.get_unique_number()
         left_ast = self.left.ast()
         right_ast = self.right.ast()
-        result = f'{father_index}[label="ARITHMETIC {self._type.name}"]\n' \
+        result = f'{father_index}[label="ARITHMETIC {self.arithmetic_type.name}"]\n' \
                  f'{left_ast.value}\n' \
                  f'{father_index} -> {left_ast.head_ref}\n' \
                  f'{right_ast.value}\n' \

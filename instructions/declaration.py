@@ -54,7 +54,11 @@ class Declaration(Instruction):
             tmp_var: Symbol = env.save_variable(self.variable_id, self.expression_type,
                                                 self.is_mutable, True, self.line, self.column)
 
-            generator.add_set_stack(str(tmp_var.position), str(result.value))
+            if result.is_tmp:
+                generator.code = result.generator.code
+                generator.add_set_stack(tmp_var.position, result.value)
+            else:
+                generator.add_set_stack(str(tmp_var.position), str(result.value))
             return ExecReturn(generator=generator,
                               propagate_method_return=False, propagate_continue=False, propagate_break=False)
 

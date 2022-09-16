@@ -8,7 +8,7 @@ class Expression:
     def __init__(self, line: int, column: int):
         self.line = line
         self.column = column
-        self.content_type: ExpressionType = None
+        self.expression_type: ExpressionType = None
         self.expression_type: ExpressionType = None
         self.true_label = ""
         self.false_label = ""

@@ -254,22 +254,22 @@ def p_expression_false(p):
 
 def p_expression_plus(p):
     """expression : expression SUM expression"""
-    p[0] = Arithmetic(p[1], p[3], ArithmeticType.SUM, p.lineno(2), -1)
+    p[0] = Arithmetic(p[1], p[3], ArithmeticType.SUM, p[1].expression_type, p.lineno(2), -1)
 
 
 def p_expression_minus(p):
     """expression : expression SUB expression"""
-    p[0] = Arithmetic(p[1], p[3], ArithmeticType.SUB, p.lineno(2), -1)
+    p[0] = Arithmetic(p[1], p[3], ArithmeticType.SUB, p[1].expression_type, p.lineno(2), -1)
 
 
 def p_expression_mult(p):
     """expression : expression MULT expression"""
-    p[0] = Arithmetic(p[1], p[3], ArithmeticType.MULT, p.lineno(2), -1)
+    p[0] = Arithmetic(p[1], p[3], ArithmeticType.MULT, p[1].expression_type, p.lineno(2), -1)
 
 
 def p_expression_div(p):
     """expression : expression DIV expression"""
-    p[0] = Arithmetic(p[1], p[3], ArithmeticType.DIV, p.lineno(2), -1)
+    p[0] = Arithmetic(p[1], p[3], ArithmeticType.DIV, p[1].expression_type, p.lineno(2), -1)
 
 
 def p_expression_pow_int(p):

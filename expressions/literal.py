@@ -17,7 +17,7 @@ class Literal(Expression):
         if self.expression_type in [ExpressionType.INT, ExpressionType.FLOAT, ExpressionType.CHAR]:
 
             return ValueTuple(value=self.value, expression_type=self.expression_type, is_mutable=False,
-                              content_type=self.expression_type, capacity=None, is_tmp=False)
+                              content_type=self.expression_type, capacity=None, is_tmp=False, generator=Generator())
 
         if self.expression_type == ExpressionType.STRING_PRIMITIVE:
             generator = Generator()
@@ -31,7 +31,7 @@ class Literal(Expression):
             generator.add_set_heap("H", "-1")
 
             return ValueTuple(value=t, expression_type=self.expression_type, is_mutable=False,
-                              content_type=self.expression_type, capacity=None, is_tmp=True)
+                              content_type=self.expression_type, capacity=None, is_tmp=True, generator=generator)
 
         print("literal.py::ERROR! Unknown literal type")
 

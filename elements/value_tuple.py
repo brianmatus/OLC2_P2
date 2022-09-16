@@ -1,10 +1,12 @@
 from typing import Union, List
 from element_types.c_expression_type import ExpressionType
-
+from generator import Generator
 
 class ValueTuple:
 
-    def __init__(self, value, expression_type: ExpressionType, is_mutable: bool, content_type: Union[ExpressionType, None],
+    def __init__(self, value, expression_type: ExpressionType, is_mutable: bool,
+                 generator: Union[Generator, None],
+                 content_type: Union[ExpressionType, None],
                  capacity: Union[List[int], None], is_tmp: bool):
         self.expression_type: ExpressionType = expression_type
         self.value: ExpressionType = value
@@ -12,6 +14,7 @@ class ValueTuple:
         self.content_type: ExpressionType = content_type
         self.capacity: List[int] = capacity
         self.is_tmp: bool = is_tmp
+        self.generator: Generator = generator
         self.true_label = ""
         self.false_label = ""
 

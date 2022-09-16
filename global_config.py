@@ -7,12 +7,12 @@ from errors.lexic_error import LexicError
 from errors.semantic_error import SemanticError
 from errors.syntactic_error import SyntacticError
 
-from elements.value_tuple import ValueTuple
+# from elements.value_tuple import ValueTuple
 lexic_error_list: List[LexicError] = []
 syntactic_error_list: List[SyntacticError] = []
 semantic_error_list: List[SemanticError] = []
-
 tmp_symbol_table = []
+tmp_i = 0
 
 
 ALLOW_NESTED_VARIABLE_OVERRIDE = True

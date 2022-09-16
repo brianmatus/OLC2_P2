@@ -2,7 +2,9 @@ import traceback
 
 import analysis.lexer as lexer  # TODO for debug only
 
-from typing import List
+from typing import List, Union
+
+from generator import Generator
 
 import errors.custom_semantic
 from analysis.parser import parser
@@ -160,9 +162,26 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
             # raise SemanticError(error_msg, -1, -1)
 
         # TODO "Abandonen la esperanza todos los que entren aquí"
+        final_generator: Union[Generator, None] = None
         for instruction in main_func.instructions:
             a = instruction.execute(main_func.environment)
+            if final_generator is None:
+                final_generator = a.generator
+            else:
+                final_generator.code = final_generator.code + a.generator.code
+
+
+            if a.propagate_continue or a.propagate_break:
+                error_msg = f"break/continue colocado erroneamente"
+                global_config.log_semantic_error(error_msg, instruction.line, instruction.column)
+                raise SemanticError(error_msg, instruction.line, instruction.column)
+
+            if a.propagate_method_return:
+                break
+
             _symbol_table = main_func.environment.symbol_table
+
+        print(final_generator.set_as_final_code())
 
         print("-------------------------------------------------------------------------------------------------------")
 
@@ -194,7 +213,7 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
 
     except Exception as err:
         traceback.print_exc()
-        print(err)
+        # print(err)
 
         print("#####################Errores Lexicos:###################")
         lexic: LexicError

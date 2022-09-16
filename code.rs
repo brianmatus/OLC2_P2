@@ -1,10 +1,5 @@
-
 fn main () {
-
-
-    let mut x : i64 = 25;
-    let mut y : i64 = 16;
-    let mut z : i64 = 21;
+    let mut x : i64 = 20+5+2*3*4+16;
+    let mut y : i64 = 40+2;
 }
-
 
