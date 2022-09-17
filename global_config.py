@@ -13,6 +13,7 @@ syntactic_error_list: List[SyntacticError] = []
 semantic_error_list: List[SemanticError] = []
 tmp_symbol_table = []
 tmp_i = 0
+label_i = 0
 
 
 ALLOW_NESTED_VARIABLE_OVERRIDE = True

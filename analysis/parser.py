@@ -269,27 +269,27 @@ def p_expression_mult(p):
 
 def p_expression_div(p):
     """expression : expression DIV expression"""
-    p[0] = Arithmetic(p[1], p[3], ArithmeticType.DIV, p[1].expression_type, p.lineno(2), -1)
+    p[0] = Arithmetic(p[1], p[3], ArithmeticType.DIV, ExpressionType.FLOAT, p.lineno(2), -1)
 
 
 def p_expression_pow_int(p):
     """expression : TYPE_I64 COLON COLON POW PARENTH_O expression COMMA expression PARENTH_C"""
-    p[0] = Arithmetic(p[6], p[8], ArithmeticType.POW_INT, p.lineno(1), -1)
+    p[0] = Arithmetic(p[6], p[8], ArithmeticType.POW_INT, ExpressionType.INT, p.lineno(2), -1)
 
 
 def p_expression_pow_float(p):
     """expression : TYPE_F64 COLON COLON POWF PARENTH_O expression COMMA expression PARENTH_C"""
-    p[0] = Arithmetic(p[6], p[8], ArithmeticType.POW_FLOAT, p.lineno(1), -1)
+    p[0] = Arithmetic(p[6], p[8], ArithmeticType.POW_FLOAT, ExpressionType.FLOAT, p.lineno(2), -1)
 
 
 def p_expression_mod(p):
     """expression : expression MOD expression"""
-    p[0] = Arithmetic(p[1], p[3], ArithmeticType.MOD, p.lineno(2), -1)
+    p[0] = Arithmetic(p[1], p[3], ArithmeticType.MOD, ExpressionType.INT, p.lineno(2), -1)
 
 
 def p_expression_uminus(p):
     """expression : SUB expression %prec UMINUS"""
-    p[0] = Arithmetic(p[2], p[2], ArithmeticType.NEG, p.lineno(1), -1)
+    p[0] = Arithmetic(p[2], p[2], ArithmeticType.NEG, p[2].expression_type, p.lineno(1), -1)
 
 
 def p_expression_parenthesis(p):

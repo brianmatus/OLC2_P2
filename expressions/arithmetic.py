@@ -3,9 +3,7 @@ from abstract.expression import Expression
 from elements.c_env import Environment
 from elements.value_tuple import ValueTuple
 from element_types.c_expression_type import ExpressionType
-from returns.ast_return import ASTReturn
 from element_types.arithmetic_type import ArithmeticType
-import math
 
 import global_config
 from generator import Generator
@@ -22,13 +20,11 @@ class Arithmetic(Expression):
         self.arithmetic_type = arithmetic_type
         self.expression_type = expression_type
 
-
     def __str__(self):
         return f'Arithmetic({self.left}, {self.arithmetic_type.name}, {self.right}'
 
     def execute(self, environment: Environment) -> ValueTuple:
 
-        error_msj: str = ""
         left: ValueTuple = self.left.execute(environment)
         right: ValueTuple = self.right.execute(environment)
 
@@ -39,128 +35,161 @@ class Arithmetic(Expression):
 
             case ArithmeticType.POW_INT:
 
-                if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.INT:
-                    return ValueTuple(value=math.pow(left.value, right.value), expression_type=ExpressionType.INT, is_mutable=False,
-                                      content_type=None, capacity=None)
+                if left.expression_type != ExpressionType.INT or right.expression_type != ExpressionType.INT:
 
-                error_msg = f"Operacion Aritmetica POW {left.expression_type.name} <->" \
-                            f"{right.expression_type.name} es invalida."
-                global_config.log_semantic_error(error_msg, self.line, self.column)
-                raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
+                    error_msg = f"Operacion Aritmetica POW {left.expression_type.name} <->" \
+                                f"{right.expression_type.name} es invalida."
+                    global_config.log_semantic_error(error_msg, self.line, self.column)
+                    raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
+
+                tf = generator.new_temp()
+                t1 = generator.new_temp()
+
+                label_loop = generator.new_label()
+                label_end = generator.new_label()
+                label_exit = generator.new_label()
+
+                # <a code>
+                # <b code>
+                generator.code = left.generator.code + right.generator.code
+
+                # tf = 1
+                generator.add_expression(tf, "1", "", "")
+
+                # t1 = b.val
+                generator.add_expression(t1, str(right.value), "", "")
+
+                # if b.val >= 0 goto Loop
+                generator.add_if(right.value, "0", ">=", label_loop)
+
+                # t1 = 0 - t1  //make positive
+                generator.add_expression(t1, "0", t1, "-")
+
+                # Loop:
+                generator.add_label(label_loop)
+
+                # if t1 == 0 then goto End
+                generator.add_if(t1, "0", "==", label_end)
+
+                # tf = tf * a.val
+                generator.add_expression(tf, tf, left.value, "*")
+
+                # t1 = t1 - 1
+                generator.add_expression(t1, t1, "1", "-")
+
+                # goto Loop
+                generator.add_goto(label_loop)
+
+                # End:
+                generator.add_label(label_end)
+
+                # if b.val >= 0 goto Exit
+                generator.add_if(right.value, "0", ">=", label_exit)
+
+                # tf = 1 / tf
+                generator.add_expression(tf, "1", tf, "/")
+
+                generator.add_label(label_exit)
+
+                return ValueTuple(tf, ExpressionType.INT, False, generator, ExpressionType.INT, None, True)
 
             case ArithmeticType.POW_FLOAT:
-                print("Not implemented in 3-address-code")
-                # if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
-                #     return ValueTuple(value=math.pow(left.value, right.value), expression_type=ExpressionType.FLOAT,
-                #                       is_mutable=False, content_type=None, capacity=None)
-                #
-                error_msg = f"Operacion Aritmetica POWF {left.expression_type.name} <->" \
-                            f"{right.expression_type.name} es invalida."
-                # global_config.log_semantic_error(error_msg, self.line, self.column)
-                # raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
+                error_msg = f"Not implemented in 3-address-code"
+                global_config.log_semantic_error(error_msg, self.line, self.column)
+                raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
 
             case ArithmeticType.SUM:
 
                 # INT
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.INT:
                     new_tmp = generator.new_temp()
-                    #Both Temp
-                    if left.is_tmp and right.is_tmp:
-                        generator.code = left.generator.code
-                        generator.code = generator.code + right.generator.code
-                        generator.add_expression(new_tmp, left.value, right.value, "+")
-                        return ValueTuple(new_tmp, ExpressionType.INT, False,
-                                          generator, ExpressionType.INT, None, True)
-                    #Only one tmp
-                    if left.is_tmp:
-                        generator.code = left.generator.code
-                        generator.add_expression(new_tmp, left.value, right.value, "+")
-                        return ValueTuple(new_tmp, ExpressionType.INT, False,
-                                          generator, ExpressionType.INT, None, True)
-                    if right.is_tmp:
-                        generator.code = right.generator.code
-                        generator.add_expression(new_tmp, left.value, right.value, "+")
-                        return ValueTuple(new_tmp, ExpressionType.INT, False,
-                                          generator, ExpressionType.INT, None, True)
-
-                    # No tmps
+                    generator.code = left.generator.code + right.generator.code
                     generator.add_expression(new_tmp, left.value, right.value, "+")
-
                     return ValueTuple(new_tmp, ExpressionType.INT, False,
                                       generator, ExpressionType.INT, None, True)
 
                 # USIZE INT(literals)
                 if left.expression_type == ExpressionType.USIZE and right.expression_type == ExpressionType.INT:
                     if global_config.is_arithmetic_pure_literals(self.right):
-                        # if left.value + right.value < 0:
-                        #     error_msg = f"USIZE UNDERFLOW: Valores usize deben ser positivos."
-                        #     global_config.log_semantic_error(error_msg, self.line, self.column)
-                        #     raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
-                        return ValueTuple(value=left.value + right.value, expression_type=ExpressionType.USIZE, is_mutable=False,
-                                          content_type=None, capacity=None)
+                        new_tmp = generator.new_temp()
+                        generator.code = left.generator.code + right.generator.code
+                        generator.add_expression(new_tmp, left.value, right.value, "+")
+                        return ValueTuple(new_tmp, ExpressionType.USIZE, False,
+                                          generator, ExpressionType.USIZE, None, True)
 
                 # INT(literals) USIZE
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.USIZE:
                     if global_config.is_arithmetic_pure_literals(self.left):
-                        # if left.value + right.value < 0:
-                        #     error_msg = f"USIZE UNDERFLOW: Valores usize deben ser positivos."
-                        #     global_config.log_semantic_error(error_msg, self.line, self.column)
-                        #     raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
-                        return ValueTuple(value=left.value + right.value, expression_type=ExpressionType.USIZE, is_mutable=False,
-                                          content_type=None, capacity=None)
+                        new_tmp = generator.new_temp()
+                        generator.code = left.generator.code + right.generator.code
+                        generator.add_expression(new_tmp, left.value, right.value, "+")
+                        return ValueTuple(new_tmp, ExpressionType.USIZE, False,
+                                          generator, ExpressionType.USIZE, None, True)
 
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
-                    return ValueTuple(value=left.value + right.value, expression_type=ExpressionType.FLOAT, is_mutable=False,
-                                      content_type=None, capacity=None)
+                    new_tmp = generator.new_temp()
+                    generator.code = left.generator.code
+                    generator.code = generator.code + right.generator.code
+                    generator.add_expression(new_tmp, left.value, right.value, "+")
+                    return ValueTuple(new_tmp, ExpressionType.FLOAT, False,
+                                      generator, ExpressionType.FLOAT, None, True)
 
                 # &str + String
-                if left.expression_type == ExpressionType.STRING_PRIMITIVE and right.expression_type == ExpressionType.STRING_CLASS:
-                    return ValueTuple(value=left.value + right.value, expression_type=ExpressionType.STRING_CLASS, is_mutable=False,
-                                      content_type=None, capacity=None)
+                if left.expression_type == ExpressionType.STRING_PRIMITIVE \
+                        and right.expression_type == ExpressionType.STRING_CLASS:
+                    # TODO implement string heap reallocation
+                    pass
 
                 # String + &str
-                if left.expression_type == ExpressionType.STRING_CLASS and right.expression_type == ExpressionType.STRING_PRIMITIVE:
-                    return ValueTuple(value=left.value + right.value, expression_type=ExpressionType.STRING_CLASS, is_mutable=False,
-                                      content_type=None, capacity=None)
+                if left.expression_type == ExpressionType.STRING_CLASS \
+                        and right.expression_type == ExpressionType.STRING_PRIMITIVE:
+                    # TODO implement string heap reallocation
+                    pass
 
-                error_msg = f"Operacion Aritmetica SUMA {left.expression_type.name} <-> {right.expression_type.name} es invalida."
+                error_msg = f"Operacion Aritmetica SUMA " \
+                            f"{left.expression_type.name} <-> {right.expression_type.name} es invalida."
                 global_config.log_semantic_error(error_msg, self.line, self.column)
                 raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
 
             case ArithmeticType.SUB:
                 # INT
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.INT:
-                    return ValueTuple(value=left.value - right.value, expression_type=ExpressionType.INT, is_mutable=False,
-                                      content_type=None, capacity=None)
+                    new_tmp = generator.new_temp()
+                    generator.code = left.generator.code
+                    generator.code = generator.code + right.generator.code
+                    generator.add_expression(new_tmp, left.value, right.value, "-")
+                    return ValueTuple(new_tmp, ExpressionType.INT, False,
+                                      generator, ExpressionType.INT, None, True)
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
-                    return ValueTuple(value=left.value - right.value, expression_type=ExpressionType.FLOAT, is_mutable=False,
-                                      content_type=None, capacity=None)
+                    new_tmp = generator.new_temp()
+                    generator.code = left.generator.code
+                    generator.code = generator.code + right.generator.code
+                    generator.add_expression(new_tmp, left.value, right.value, "+")
+                    return ValueTuple(new_tmp, ExpressionType.FLOAT, False,
+                                      generator, ExpressionType.FLOAT, None, True)
 
                 # USIZE INT(literals)
                 if left.expression_type == ExpressionType.USIZE and right.expression_type == ExpressionType.INT:
                     if global_config.is_arithmetic_pure_literals(self.right):
-                        # TODO Should usize be measured for undersize?
-                        # if left.value - right.value < 0:
-                        #     error_msg = f"USIZE UNDERFLOW: Valores usize deben ser positivos." \
-                        #                 f"({left.value - right.value})"
-                        #     global_config.log_semantic_error(error_msg, self.line, self.column)
-                        #     raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
-                        return ValueTuple(value=left.value - right.value, expression_type=ExpressionType.USIZE, is_mutable=False,
-                                          content_type=None, capacity=None)
+                        new_tmp = generator.new_temp()
+                        generator.code = left.generator.code + right.generator.code
+                        generator.add_expression(new_tmp, left.value, right.value, "-")
+                        return ValueTuple(new_tmp, ExpressionType.USIZE, False,
+                                          generator, ExpressionType.USIZE, None, True)
 
                 # INT(literals) USIZE
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.USIZE:
                     if global_config.is_arithmetic_pure_literals(self.left):
-                        # if left.value - right.value < 0:
-                        #     error_msg = f"USIZE UNDERFLOW: Valores usize deben ser positivos."
-                        #     global_config.log_semantic_error(error_msg, self.line, self.column)
-                        #     raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
-                        return ValueTuple(value=left.value - right.value, expression_type=ExpressionType.USIZE, is_mutable=False,
-                                          content_type=None, capacity=None)
+                        new_tmp = generator.new_temp()
+                        generator.code = left.generator.code + right.generator.code
+                        generator.add_expression(new_tmp, left.value, right.value, "-")
+                        return ValueTuple(new_tmp, ExpressionType.USIZE, False,
+                                          generator, ExpressionType.USIZE, None, True)
 
-                error_msg = f"Operacion Aritmetica RESTA {left.expression_type.name} <-> {right.expression_type.name} es invalida."
+                error_msg = f"Operacion Aritmetica RESTA " \
+                            f"{left.expression_type.name} <-> {right.expression_type.name} es invalida."
                 global_config.log_semantic_error(error_msg, self.line, self.column)
                 raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
 
@@ -168,103 +197,117 @@ class Arithmetic(Expression):
                 # INT
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.INT:
                     new_tmp = generator.new_temp()
-                    # Both Temp
-                    if left.is_tmp and right.is_tmp:
-                        generator.code = left.generator.code
-                        generator.code.append(right.generator.code)
-                        generator.add_expression(new_tmp, left.value, right.value, "*")
-                        return ValueTuple(new_tmp, ExpressionType.INT, False,
-                                          generator, ExpressionType.INT, None, True)
-                    # Only one tmp
-                    if left.is_tmp:
-                        generator.code = left.generator.code
-                        generator.add_expression(new_tmp, left.value, right.value, "*")
-                        return ValueTuple(new_tmp, ExpressionType.INT, False,
-                                          generator, ExpressionType.INT, None, True)
-                    if right.is_tmp:
-                        generator.code = right.generator.code
-                        generator.add_expression(new_tmp, left.value, right.value, "*")
-                        return ValueTuple(new_tmp, ExpressionType.INT, False,
-                                          generator, ExpressionType.INT, None, True)
-
-                    # No tmps
+                    generator.code = left.generator.code
+                    generator.code = generator.code + right.generator.code
                     generator.add_expression(new_tmp, left.value, right.value, "*")
-
                     return ValueTuple(new_tmp, ExpressionType.INT, False,
                                       generator, ExpressionType.INT, None, True)
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
-                    return ValueTuple(value=left.value * right.value, expression_type=ExpressionType.FLOAT, is_mutable=False,
-                                      content_type=None, capacity=None)
+                    new_tmp = generator.new_temp()
+                    generator.code = left.generator.code
+                    generator.code = generator.code + right.generator.code
+                    generator.add_expression(new_tmp, left.value, right.value, "*")
+                    return ValueTuple(new_tmp, ExpressionType.FLOAT, False,
+                                      generator, ExpressionType.FLOAT, None, True)
 
                 # USIZE INT(literals)
                 if left.expression_type == ExpressionType.USIZE and right.expression_type == ExpressionType.INT:
                     if global_config.is_arithmetic_pure_literals(self.right):
-                        # if left.value * right.value < 0:
-                        #     error_msg = f"USIZE UNDERFLOW: Valores usize deben ser positivos."
-                        #     global_config.log_semantic_error(error_msg, self.line, self.column)
-                        #     raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
-                        return ValueTuple(value=left.value * right.value, expression_type=ExpressionType.USIZE, is_mutable=False,
-                                          content_type=None, capacity=None)
+                        new_tmp = generator.new_temp()
+                        generator.code = left.generator.code + right.generator.code
+                        generator.add_expression(new_tmp, left.value, right.value, "*")
+                        return ValueTuple(new_tmp, ExpressionType.USIZE, False,
+                                          generator, ExpressionType.USIZE, None, True)
 
                 # INT(literals) USIZE
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.USIZE:
                     if global_config.is_arithmetic_pure_literals(self.left):
-                        # if left.value + right.value < 0:
-                        #     error_msg = f"USIZE UNDERFLOW: Valores usize deben ser positivos."
-                        #     global_config.log_semantic_error(error_msg, self.line, self.column)
-                        #     raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
-                        return ValueTuple(value=left.value * right.value, expression_type=ExpressionType.USIZE, is_mutable=False,
-                                          content_type=None, capacity=None)
+                        new_tmp = generator.new_temp()
+                        generator.code = left.generator.code + right.generator.code
+                        generator.add_expression(new_tmp, left.value, right.value, "*")
+                        return ValueTuple(new_tmp, ExpressionType.USIZE, False,
+                                          generator, ExpressionType.USIZE, None, True)
 
-                error_msg = f"Operacion Aritmetica MULTIPLICACION {left.expression_type.name} <-> {right.expression_type.name} es invalida."
+                error_msg = f"Operacion Aritmetica MULTIPLICACION " \
+                            f"{left.expression_type.name}<-> {right.expression_type.name} es invalida."
                 global_config.log_semantic_error(error_msg, self.line, self.column)
                 raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
 
             case ArithmeticType.DIV:
 
-
-                if right.value == 0:
-                    error_msg = f"Operacion Aritmetica DIV no puede ser divisor 0."
-                    global_config.log_semantic_error(error_msg, self.line, self.column)
-                    raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
-
                 # INT
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.INT:
-                    return ValueTuple(value=left.value / right.value, expression_type=ExpressionType.FLOAT, is_mutable=False,
-                                      content_type=None, capacity=None)
+                    new_tmp = generator.new_temp()
+                    generator.code = left.generator.code + right.generator.code
+
+                    not_div_by_zero_label = generator.new_label()
+                    generator.add_if(right.value, "0", "!=", not_div_by_zero_label)
+                    generator.add_print_message(f"ERROR SEMÁNTICO: Division por 0 "
+                                                f"en linea:{self.line} columna:{self.column}")
+                    generator.add_error_return("1")
+                    generator.add_label(not_div_by_zero_label)
+
+                    generator.add_expression(new_tmp, left.value, f"(double) {right.value}", "/")
+                    return ValueTuple(new_tmp, ExpressionType.FLOAT, False,
+                                      generator, ExpressionType.FLOAT, None, True)
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
-                    return ValueTuple(value=left.value / right.value, expression_type=ExpressionType.FLOAT, is_mutable=False,
-                                      content_type=None, capacity=None)
+                    new_tmp = generator.new_temp()
+                    generator.code = left.generator.code + right.generator.code
 
-                error_msg = f"Operacion Aritmetica DIVISION {left.expression_type.name} <-> {right.expression_type.name} es invalida."
+                    not_div_by_zero_label = generator.new_label()
+                    generator.add_if(right.value, "0", "!=", not_div_by_zero_label)
+                    generator.add_print_message(f"ERROR SEMÁNTICO: Division por 0 "
+                                                f"en linea:{self.line} columna:{self.column}\n")
+                    generator.add_error_return("1")
+                    generator.add_label(not_div_by_zero_label)
+
+                    generator.add_expression(new_tmp, left.value, right.value, "/")
+                    return ValueTuple(new_tmp, ExpressionType.FLOAT, False,
+                                      generator, ExpressionType.FLOAT, None, True)
+
+                error_msg = f"Operación Aritmética DIVISION " \
+                            f"{left.expression_type.name} <-> {right.expression_type.name} es invalida."
                 global_config.log_semantic_error(error_msg, self.line, self.column)
                 raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
 
             case ArithmeticType.MOD:
                 # INT
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.INT:
-                    return ValueTuple(value=left.value % right.value, expression_type=ExpressionType.INT, is_mutable=False,
-                                      content_type=None, capacity=None)
+                    new_tmp = generator.new_temp()
+                    generator.code = left.generator.code + right.generator.code
+                    generator.add_expression(new_tmp, left.value, right.value, "%")
+                    return ValueTuple(new_tmp, ExpressionType.INT, False,
+                                      generator, ExpressionType.INT, None, True)
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
-                    return ValueTuple(value=left.value % right.value, expression_type=ExpressionType.FLOAT, is_mutable=False,
-                                      content_type=None, capacity=None)
+                    new_tmp = generator.new_temp()
+                    generator.code = left.generator.code + right.generator.code
+                    generator.add_expression(new_tmp, left.value, right.value, "%")
+                    return ValueTuple(new_tmp, ExpressionType.INT, False,
+                                      generator, ExpressionType.INT, None, True)
 
                 # USIZE INT(literals)
                 if left.expression_type == ExpressionType.USIZE and right.expression_type == ExpressionType.INT:
                     if global_config.is_arithmetic_pure_literals(self.right):
-                        return ValueTuple(value=left.value % right.value, expression_type=ExpressionType.USIZE, is_mutable=False,
-                                          content_type=None, capacity=None)
+                        new_tmp = generator.new_temp()
+                        generator.code = left.generator.code + right.generator.code
+                        generator.add_expression(new_tmp, left.value, right.value, "%")
+                        return ValueTuple(new_tmp, ExpressionType.USIZE, False,
+                                          generator, ExpressionType.USIZE, None, True)
 
                 # INT(literals) USIZE
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.USIZE:
                     if global_config.is_arithmetic_pure_literals(self.left):
-                        return ValueTuple(value=left.value % right.value, expression_type=ExpressionType.USIZE, is_mutable=False,
-                                          content_type=None, capacity=None)
+                        new_tmp = generator.new_temp()
+                        generator.code = left.generator.code + right.generator.code
+                        generator.add_expression(new_tmp, left.value, right.value, "%")
+                        return ValueTuple(new_tmp, ExpressionType.USIZE, False,
+                                          generator, ExpressionType.USIZE, None, True)
 
-                error_msg = f"Operacion Aritmetica MODULAR {left.expression_type.name} <-> {right.expression_type.name} es invalida."
+                error_msg = f"Operacion Aritmetica MODULAR " \
+                            f"{left.expression_type.name} <-> {right.expression_type.name} es invalida."
                 global_config.log_semantic_error(error_msg, self.line, self.column)
                 raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
 
@@ -272,41 +315,23 @@ class Arithmetic(Expression):
 
                 # INT
                 if left.expression_type == ExpressionType.INT:
-                    return ValueTuple(value=0-left.value, expression_type=ExpressionType.INT, is_mutable=False, content_type=None,
-                                      capacity=None)
+                    new_tmp = generator.new_temp()
+                    generator.code = left.generator.code + right.generator.code
+                    generator.add_expression(new_tmp, "", left.value, "-")
+                    return ValueTuple(new_tmp, ExpressionType.INT, False,
+                                      generator, ExpressionType.INT, None, True)
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT:
-                    return ValueTuple(value=0-left.value, expression_type=ExpressionType.FLOAT, is_mutable=False, content_type=None,
-                                      capacity=None)
+                    new_tmp = generator.new_temp()
+                    generator.code = left.generator.code + right.generator.code
+                    generator.add_expression(new_tmp, "", left.value, "-")
+                    return ValueTuple(new_tmp, ExpressionType.FLOAT, False,
+                                      generator, ExpressionType.FLOAT, None, True)
 
-                error_msg = f"Operacion Aritmetica MODULAR {left.expression_type.name} <-> {right.expression_type.name} es invalida."
+                error_msg = f"Operacion Aritmetica MODULAR " \
+                            f"{left.expression_type.name} <-> {right.expression_type.name} es invalida."
                 global_config.log_semantic_error(error_msg, self.line, self.column)
                 raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
 
             case _:
                 print("ERROR??? Unknown arithmetic type?")
-
-    def ast(self) -> ASTReturn:
-
-        if self.arithmetic_type == ArithmeticType.NEG:
-            return self.singular_operation_ast()
-        return self.two_operation_ast()
-
-    def singular_operation_ast(self) -> ASTReturn:
-        father_index: int = global_config.get_unique_number()
-        left_ast = self.left.ast()
-        result = f'{father_index}[label="ARITHMETIC {self.arithmetic_type.name}"]\n' \
-                 f'{left_ast.value}\n' \
-                 f'{father_index} -> {left_ast.head_ref}\n'
-        return ASTReturn(result, father_index)
-
-    def two_operation_ast(self) -> ASTReturn:
-        father_index: int = global_config.get_unique_number()
-        left_ast = self.left.ast()
-        right_ast = self.right.ast()
-        result = f'{father_index}[label="ARITHMETIC {self.arithmetic_type.name}"]\n' \
-                 f'{left_ast.value}\n' \
-                 f'{father_index} -> {left_ast.head_ref}\n' \
-                 f'{right_ast.value}\n' \
-                 f'{father_index} -> {right_ast.head_ref}\n'
-        return ASTReturn(result, father_index)

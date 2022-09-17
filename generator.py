@@ -6,13 +6,11 @@ class Generator:
 
     def __init__(self) -> None:
         # self.generator = None
-        self.label: int = 0
         self.code: list = []
         self.tempList: list = []
 
     def get_used_temps(self) -> str:
-        a = ",".join([f"t{i}" for i in range(global_config.tmp_i)])
-        return a
+        return ",".join([f"t{i}" for i in range(global_config.tmp_i)])
 
     def get_code(self) -> str:
         return "\n".join(self.code)
@@ -33,14 +31,14 @@ class Generator:
 
     # Label
     def new_label(self) -> str:
-        tmp = self.label
-        self.label = self.label + 1
+        tmp = global_config.label_i
+        global_config.label_i = global_config.label_i + 1
         return "L" + str(tmp)
 
     ##############################################################
 
     def add_main_enclosure(self):
-        self.code = [f"void main(){{\n"
+        self.code = [f"int main(){{\n"
                      f"{self.get_code()}\n"
                      f"return 0;\n"
                      f"}}"]
@@ -84,7 +82,11 @@ class Generator:
 
     # printf(...)
     def add_printf(self, type_print: str, value: str):
-        self.code.append(f"printf\"%{type_print}\",{value});")
+        self.code.append(f"printf(\"%{type_print}\",{value});")
+
+    def add_print_message(self, msg: str):
+        for char in msg:
+            self.code.append(f"printf(\"%c\",{str(ord(char))});")
 
     # prints newline
     def add_newline(self):
@@ -117,3 +119,6 @@ class Generator:
     # heap[i] = val
     def add_set_stack(self, index: str, value: str):
         self.code.append(f'STACK[(int){index}] = {value};')
+
+    def add_error_return(self, return_code: str):
+        self.code.append(f"return {return_code};")
