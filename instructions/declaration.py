@@ -50,41 +50,55 @@ class Declaration(Instruction):
         if self.expression_type is None:
             self.expression_type = expr.expression_type
 
+        # bool is a special type
+
+        if expr.expression_type == ExpressionType.BOOL:
+            result: ValueTuple = expr.execute(env)
+
+            tmp_var: Symbol = env.save_variable(self.variable_id, self.expression_type,
+                                                self.is_mutable, True, self.line, self.column)
+
+            exit_label = result.generator.new_label()
+            result.generator.add_label(result.false_label)
+            result.generator.add_set_stack(str(tmp_var.position), "0")
+            result.generator.add_goto(exit_label)
+            result.generator.add_label(result.true_label)
+            result.generator.add_set_stack(str(tmp_var.position), "1")
+            result.generator.add_label([exit_label])
+
+            return ExecReturn(generator=result.generator,
+                              propagate_method_return=False, propagate_continue=False, propagate_break=False)
+
+
         # Check same type
         if expr.expression_type == self.expression_type:
-            generator = Generator()
             result: ValueTuple = expr.execute(env)
             tmp_var: Symbol = env.save_variable(self.variable_id, self.expression_type,
                                                 self.is_mutable, True, self.line, self.column)
-            generator.code = result.generator.code
-            generator.add_set_stack(str(tmp_var.position), str(result.value))
-            return ExecReturn(generator=generator,
+            result.generator.add_set_stack(str(tmp_var.position), str(result.value))
+            return ExecReturn(generator=result.generator,
                               propagate_method_return=False, propagate_continue=False, propagate_break=False)
 
         # Exceptions of same type:
 
         # char var_type with str expr_type
         if self.expression_type == ExpressionType.CHAR and expr.expression_type == ExpressionType.STRING_PRIMITIVE:
-            generator = Generator()
             result: ValueTuple = expr.execute(env)
             tmp_var: Symbol = env.save_variable(self.variable_id, self.expression_type,
                                                 self.is_mutable, True, self.line, self.column)
-            generator.code = result.generator.code
-            generator.add_set_stack(str(tmp_var.position), str(result.value))
-            return ExecReturn(generator=generator,
+            result.generator.add_set_stack(str(tmp_var.position), str(result.value))
+            return ExecReturn(generator=result.generator,
                               propagate_method_return=False, propagate_continue=False, propagate_break=False)
 
         # usize var_type with int expr_type
         if self.expression_type == ExpressionType.USIZE and expr.expression_type == ExpressionType.INT:
 
             if global_config.is_arithmetic_pure_literals(self.expression):
-                generator = Generator()
                 result: ValueTuple = expr.execute(env)
                 tmp_var: Symbol = env.save_variable(self.variable_id, self.expression_type,
                                                     self.is_mutable, True, self.line, self.column)
-                generator.code = result.generator.code
-                generator.add_set_stack(str(tmp_var.position), str(result.value))
-                return ExecReturn(generator=generator,
+                result.generator.add_set_stack(str(tmp_var.position), str(result.value))
+                return ExecReturn(generator=result.generator,
                                   propagate_method_return=False, propagate_continue=False, propagate_break=False)
 
         # Error:

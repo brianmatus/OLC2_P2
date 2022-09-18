@@ -1,5 +1,5 @@
 import global_config
-from typing import Tuple
+from typing import Tuple, List
 
 
 class Generator:
@@ -20,6 +20,9 @@ class Generator:
         self.add_tmps_on_top()
         self.add_headers_on_top()
         return "\n".join(self.code)
+
+    def combine_with(self, gen):  # gen: Generator
+        self.code = self.code + gen.code
 
     # tmp
     def new_temp(self) -> str:
@@ -59,14 +62,19 @@ class Generator:
                      f'double H;\n\n'
                      f'{self.get_code()}']
 
+    ##############################################################
+
     # foo()
     def add_call_func(self, name: str):
         self.code.append(f'{name}();')
         self.code.append(name + "();")
 
     # label
-    def add_label(self, label: str):
-        self.code.append(f"{label}:")
+    def add_label(self, label: List[str]):
+        if len(label) == 0:
+            return
+        for lbl in label:
+            self.code.append(f"{lbl}:")
 
     # var = val
     def add_expression(self, target: str, left: str, right: str, operator: str):
@@ -110,7 +118,7 @@ class Generator:
 
     # heap[i] = val
     def add_set_heap(self, index: str, value: str):
-        self.code.append(f'HEAP[(int){index}] = {value}')
+        self.code.append(f'HEAP[(int){index}] = {value};')
 
     # stack[i]
     def add_get_stack(self, target: str, index: str):

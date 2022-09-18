@@ -52,6 +52,8 @@ class Environment:
         the_symbol = Symbol(symbol_id=variable_id, expression_type=expression_type, position=self.size, is_init=is_init,
                             is_mutable=is_mutable, dimensions={})
 
+        self.symbol_table[variable_id] = the_symbol
+
         self.size += 1
         return the_symbol
 

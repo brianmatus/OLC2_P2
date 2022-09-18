@@ -17,7 +17,8 @@ class Literal(Expression):
         if self.expression_type in [ExpressionType.INT, ExpressionType.FLOAT, ExpressionType.CHAR]:
 
             return ValueTuple(value=self.value, expression_type=self.expression_type, is_mutable=False,
-                              content_type=self.expression_type, capacity=None, is_tmp=False, generator=Generator())
+                              content_type=self.expression_type, capacity=None, is_tmp=False, generator=Generator(),
+                              true_label=[], false_label=[])
 
         if self.expression_type == ExpressionType.STRING_PRIMITIVE:
             generator = Generator()
@@ -31,7 +32,21 @@ class Literal(Expression):
             generator.add_set_heap("H", "-1")
 
             return ValueTuple(value=t, expression_type=self.expression_type, is_mutable=False,
-                              content_type=self.expression_type, capacity=None, is_tmp=True, generator=generator)
+                              content_type=self.expression_type, capacity=None, is_tmp=True, generator=generator,
+                              true_label=[], false_label=[])
+
+        if self.expression_type == ExpressionType.BOOL:
+            generator = Generator()
+            the_label = generator.new_label()
+            generator.add_goto(the_label)
+            if self.value == "0":
+                return ValueTuple(value=generator, expression_type=self.expression_type, is_mutable=False,
+                                  content_type=self.expression_type, capacity=None, is_tmp=True, generator=generator,
+                                  true_label=[], false_label=[the_label])
+
+            return ValueTuple(value=generator, expression_type=self.expression_type, is_mutable=False,
+                              content_type=self.expression_type, capacity=None, is_tmp=True, generator=generator,
+                              true_label=[the_label], false_label=[])
 
         print("literal.py::ERROR! Unknown literal type")
 

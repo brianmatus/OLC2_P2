@@ -37,7 +37,7 @@ class Arithmetic(Expression):
 
                 if left.expression_type != ExpressionType.INT or right.expression_type != ExpressionType.INT:
 
-                    error_msg = f"Operacion Aritmetica POW {left.expression_type.name} <->" \
+                    error_msg = f"Operación Aritmética POW {left.expression_type.name} <->" \
                                 f"{right.expression_type.name} es invalida."
                     global_config.log_semantic_error(error_msg, self.line, self.column)
                     raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
@@ -66,7 +66,7 @@ class Arithmetic(Expression):
                 generator.add_expression(t1, "0", t1, "-")
 
                 # Loop:
-                generator.add_label(label_loop)
+                generator.add_label([label_loop])
 
                 # if t1 == 0 then goto End
                 generator.add_if(t1, "0", "==", label_end)
@@ -81,7 +81,7 @@ class Arithmetic(Expression):
                 generator.add_goto(label_loop)
 
                 # End:
-                generator.add_label(label_end)
+                generator.add_label([label_end])
 
                 # if b.val >= 0 goto Exit
                 generator.add_if(right.value, "0", ">=", label_exit)
@@ -89,9 +89,9 @@ class Arithmetic(Expression):
                 # tf = 1 / tf
                 generator.add_expression(tf, "1", tf, "/")
 
-                generator.add_label(label_exit)
+                generator.add_label([label_exit])
 
-                return ValueTuple(tf, ExpressionType.INT, False, generator, ExpressionType.INT, None, True)
+                return ValueTuple(tf, ExpressionType.INT, False, generator, ExpressionType.INT, None, True, [], [])
 
             case ArithmeticType.POW_FLOAT:
                 error_msg = f"Not implemented in 3-address-code"
@@ -106,7 +106,7 @@ class Arithmetic(Expression):
                     generator.code = left.generator.code + right.generator.code
                     generator.add_expression(new_tmp, left.value, right.value, "+")
                     return ValueTuple(new_tmp, ExpressionType.INT, False,
-                                      generator, ExpressionType.INT, None, True)
+                                      generator, ExpressionType.INT, None, True, [], [])
 
                 # USIZE INT(literals)
                 if left.expression_type == ExpressionType.USIZE and right.expression_type == ExpressionType.INT:
@@ -115,7 +115,7 @@ class Arithmetic(Expression):
                         generator.code = left.generator.code + right.generator.code
                         generator.add_expression(new_tmp, left.value, right.value, "+")
                         return ValueTuple(new_tmp, ExpressionType.USIZE, False,
-                                          generator, ExpressionType.USIZE, None, True)
+                                          generator, ExpressionType.USIZE, None, True, [], [])
 
                 # INT(literals) USIZE
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.USIZE:
@@ -124,7 +124,7 @@ class Arithmetic(Expression):
                         generator.code = left.generator.code + right.generator.code
                         generator.add_expression(new_tmp, left.value, right.value, "+")
                         return ValueTuple(new_tmp, ExpressionType.USIZE, False,
-                                          generator, ExpressionType.USIZE, None, True)
+                                          generator, ExpressionType.USIZE, None, True, [], [])
 
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
@@ -133,7 +133,7 @@ class Arithmetic(Expression):
                     generator.code = generator.code + right.generator.code
                     generator.add_expression(new_tmp, left.value, right.value, "+")
                     return ValueTuple(new_tmp, ExpressionType.FLOAT, False,
-                                      generator, ExpressionType.FLOAT, None, True)
+                                      generator, ExpressionType.FLOAT, None, True, [], [])
 
                 # &str + String
                 if left.expression_type == ExpressionType.STRING_PRIMITIVE \
@@ -147,7 +147,7 @@ class Arithmetic(Expression):
                     # TODO implement string heap reallocation
                     pass
 
-                error_msg = f"Operacion Aritmetica SUMA " \
+                error_msg = f"Operación Aritmética SUMA " \
                             f"{left.expression_type.name} <-> {right.expression_type.name} es invalida."
                 global_config.log_semantic_error(error_msg, self.line, self.column)
                 raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
@@ -160,7 +160,7 @@ class Arithmetic(Expression):
                     generator.code = generator.code + right.generator.code
                     generator.add_expression(new_tmp, left.value, right.value, "-")
                     return ValueTuple(new_tmp, ExpressionType.INT, False,
-                                      generator, ExpressionType.INT, None, True)
+                                      generator, ExpressionType.INT, None, True, [], [])
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
                     new_tmp = generator.new_temp()
@@ -168,7 +168,7 @@ class Arithmetic(Expression):
                     generator.code = generator.code + right.generator.code
                     generator.add_expression(new_tmp, left.value, right.value, "+")
                     return ValueTuple(new_tmp, ExpressionType.FLOAT, False,
-                                      generator, ExpressionType.FLOAT, None, True)
+                                      generator, ExpressionType.FLOAT, None, True, [], [])
 
                 # USIZE INT(literals)
                 if left.expression_type == ExpressionType.USIZE and right.expression_type == ExpressionType.INT:
@@ -177,7 +177,7 @@ class Arithmetic(Expression):
                         generator.code = left.generator.code + right.generator.code
                         generator.add_expression(new_tmp, left.value, right.value, "-")
                         return ValueTuple(new_tmp, ExpressionType.USIZE, False,
-                                          generator, ExpressionType.USIZE, None, True)
+                                          generator, ExpressionType.USIZE, None, True, [], [])
 
                 # INT(literals) USIZE
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.USIZE:
@@ -186,9 +186,9 @@ class Arithmetic(Expression):
                         generator.code = left.generator.code + right.generator.code
                         generator.add_expression(new_tmp, left.value, right.value, "-")
                         return ValueTuple(new_tmp, ExpressionType.USIZE, False,
-                                          generator, ExpressionType.USIZE, None, True)
+                                          generator, ExpressionType.USIZE, None, True, [], [])
 
-                error_msg = f"Operacion Aritmetica RESTA " \
+                error_msg = f"Operación Aritmética RESTA " \
                             f"{left.expression_type.name} <-> {right.expression_type.name} es invalida."
                 global_config.log_semantic_error(error_msg, self.line, self.column)
                 raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
@@ -201,7 +201,7 @@ class Arithmetic(Expression):
                     generator.code = generator.code + right.generator.code
                     generator.add_expression(new_tmp, left.value, right.value, "*")
                     return ValueTuple(new_tmp, ExpressionType.INT, False,
-                                      generator, ExpressionType.INT, None, True)
+                                      generator, ExpressionType.INT, None, True, [], [])
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
                     new_tmp = generator.new_temp()
@@ -209,7 +209,7 @@ class Arithmetic(Expression):
                     generator.code = generator.code + right.generator.code
                     generator.add_expression(new_tmp, left.value, right.value, "*")
                     return ValueTuple(new_tmp, ExpressionType.FLOAT, False,
-                                      generator, ExpressionType.FLOAT, None, True)
+                                      generator, ExpressionType.FLOAT, None, True, [], [])
 
                 # USIZE INT(literals)
                 if left.expression_type == ExpressionType.USIZE and right.expression_type == ExpressionType.INT:
@@ -218,7 +218,7 @@ class Arithmetic(Expression):
                         generator.code = left.generator.code + right.generator.code
                         generator.add_expression(new_tmp, left.value, right.value, "*")
                         return ValueTuple(new_tmp, ExpressionType.USIZE, False,
-                                          generator, ExpressionType.USIZE, None, True)
+                                          generator, ExpressionType.USIZE, None, True, [], [])
 
                 # INT(literals) USIZE
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.USIZE:
@@ -227,9 +227,9 @@ class Arithmetic(Expression):
                         generator.code = left.generator.code + right.generator.code
                         generator.add_expression(new_tmp, left.value, right.value, "*")
                         return ValueTuple(new_tmp, ExpressionType.USIZE, False,
-                                          generator, ExpressionType.USIZE, None, True)
+                                          generator, ExpressionType.USIZE, None, True, [], [])
 
-                error_msg = f"Operacion Aritmetica MULTIPLICACION " \
+                error_msg = f"Operación Aritmética MULTIPLICACIÓN " \
                             f"{left.expression_type.name}<-> {right.expression_type.name} es invalida."
                 global_config.log_semantic_error(error_msg, self.line, self.column)
                 raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
@@ -246,11 +246,11 @@ class Arithmetic(Expression):
                     generator.add_print_message(f"ERROR SEMÁNTICO: Division por 0 "
                                                 f"en linea:{self.line} columna:{self.column}")
                     generator.add_error_return("1")
-                    generator.add_label(not_div_by_zero_label)
+                    generator.add_label([not_div_by_zero_label])
 
                     generator.add_expression(new_tmp, left.value, f"(double) {right.value}", "/")
                     return ValueTuple(new_tmp, ExpressionType.FLOAT, False,
-                                      generator, ExpressionType.FLOAT, None, True)
+                                      generator, ExpressionType.FLOAT, None, True, [], [])
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
                     new_tmp = generator.new_temp()
@@ -261,11 +261,11 @@ class Arithmetic(Expression):
                     generator.add_print_message(f"ERROR SEMÁNTICO: Division por 0 "
                                                 f"en linea:{self.line} columna:{self.column}\n")
                     generator.add_error_return("1")
-                    generator.add_label(not_div_by_zero_label)
+                    generator.add_label([not_div_by_zero_label])
 
                     generator.add_expression(new_tmp, left.value, right.value, "/")
                     return ValueTuple(new_tmp, ExpressionType.FLOAT, False,
-                                      generator, ExpressionType.FLOAT, None, True)
+                                      generator, ExpressionType.FLOAT, None, True, [], [])
 
                 error_msg = f"Operación Aritmética DIVISION " \
                             f"{left.expression_type.name} <-> {right.expression_type.name} es invalida."
@@ -279,14 +279,14 @@ class Arithmetic(Expression):
                     generator.code = left.generator.code + right.generator.code
                     generator.add_expression(new_tmp, left.value, right.value, "%")
                     return ValueTuple(new_tmp, ExpressionType.INT, False,
-                                      generator, ExpressionType.INT, None, True)
+                                      generator, ExpressionType.INT, None, True, [], [])
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
                     new_tmp = generator.new_temp()
                     generator.code = left.generator.code + right.generator.code
                     generator.add_expression(new_tmp, left.value, right.value, "%")
                     return ValueTuple(new_tmp, ExpressionType.INT, False,
-                                      generator, ExpressionType.INT, None, True)
+                                      generator, ExpressionType.INT, None, True, [], [])
 
                 # USIZE INT(literals)
                 if left.expression_type == ExpressionType.USIZE and right.expression_type == ExpressionType.INT:
@@ -295,7 +295,7 @@ class Arithmetic(Expression):
                         generator.code = left.generator.code + right.generator.code
                         generator.add_expression(new_tmp, left.value, right.value, "%")
                         return ValueTuple(new_tmp, ExpressionType.USIZE, False,
-                                          generator, ExpressionType.USIZE, None, True)
+                                          generator, ExpressionType.USIZE, None, True, [], [])
 
                 # INT(literals) USIZE
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.USIZE:
@@ -304,9 +304,9 @@ class Arithmetic(Expression):
                         generator.code = left.generator.code + right.generator.code
                         generator.add_expression(new_tmp, left.value, right.value, "%")
                         return ValueTuple(new_tmp, ExpressionType.USIZE, False,
-                                          generator, ExpressionType.USIZE, None, True)
+                                          generator, ExpressionType.USIZE, None, True, [], [])
 
-                error_msg = f"Operacion Aritmetica MODULAR " \
+                error_msg = f"Operación Aritmética MODULAR " \
                             f"{left.expression_type.name} <-> {right.expression_type.name} es invalida."
                 global_config.log_semantic_error(error_msg, self.line, self.column)
                 raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
@@ -319,16 +319,16 @@ class Arithmetic(Expression):
                     generator.code = left.generator.code + right.generator.code
                     generator.add_expression(new_tmp, "", left.value, "-")
                     return ValueTuple(new_tmp, ExpressionType.INT, False,
-                                      generator, ExpressionType.INT, None, True)
+                                      generator, ExpressionType.INT, None, True, [], [])
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT:
                     new_tmp = generator.new_temp()
                     generator.code = left.generator.code + right.generator.code
                     generator.add_expression(new_tmp, "", left.value, "-")
                     return ValueTuple(new_tmp, ExpressionType.FLOAT, False,
-                                      generator, ExpressionType.FLOAT, None, True)
+                                      generator, ExpressionType.FLOAT, None, True, [], [])
 
-                error_msg = f"Operacion Aritmetica MODULAR " \
+                error_msg = f"Operación Aritmética MODULAR " \
                             f"{left.expression_type.name} <-> {right.expression_type.name} es invalida."
                 global_config.log_semantic_error(error_msg, self.line, self.column)
                 raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
