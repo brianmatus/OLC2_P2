@@ -11,9 +11,14 @@ from elements.match_clause import MatchClause
 from elements.match_expression_clause import MatchExpressionClause
 from elements.c_env import Environment
 from elements.id_tuple import IDTuple
+from element_types.array_def_type import ArrayDefType
 
 # ################################INSTRUCTIONS#########################################
 from instructions.declaration import Declaration
+from instructions.assignment import Assigment
+
+from instructions.array_declaration import ArrayDeclaration
+
 from instructions.function_declaration import FunctionDeclaration
 # ################################EXPRESSIONS#########################################
 from element_types.arithmetic_type import ArithmeticType
@@ -21,6 +26,7 @@ from element_types.logic_type import LogicType
 from expressions.literal import Literal
 from expressions.arithmetic import Arithmetic
 from expressions.logic import Logic
+from expressions.array_expression import ArrayExpression
 
 
 tokens = lexer.tokens
@@ -69,6 +75,8 @@ def p_instructions(p):
 def p_instruction(p):  # since all here are p[0] = p[1] (except void_inst) add all productions here
     """
     instruction : var_declaration SEMICOLON
+    | var_assignment SEMICOLON
+    | array_declaration SEMICOLON
     | function_declaration
     """
     p[0] = p[1]
@@ -93,6 +101,76 @@ def p_var_declaration_3(p):
 def p_var_declaration_4(p):
     """var_declaration : LET ID EQUAL expression"""
     p[0] = Declaration(p[2], None, p[4], False, p.lineno(1), -1)
+
+
+# ################################################Variable Assignment###################################################
+def p_var_assignment(p):
+    """var_assignment : ID EQUAL expression"""
+    p[0] = Assigment(p[1], p[3], p.lineno(1), -1)
+
+
+# ###########################################ARRAY VARIABLE DECLARATION ###############################################
+def p_array_declaration_1(p):    # TODO array_expression instead of expression
+    """array_declaration : LET MUTABLE ID COLON array_type EQUAL expression"""
+    p[0] = ArrayDeclaration(p[3], p[5], p[7], True, p.lineno(1), -1)
+    # print("p_array_declaration_1")
+
+
+def p_array_declaration_2(p):
+    """array_declaration : LET MUTABLE ID COLON array_type"""
+    p[0] = ArrayDeclaration(p[3], p[5], None, True, p.lineno(1), -1)
+
+
+def p_array_declaration_3(p):
+    """array_declaration : LET ID COLON array_type EQUAL expression"""
+    p[0] = ArrayDeclaration(p[2], p[4], p[6], False, p.lineno(1), -1)
+
+
+def p_array_declaration_4(p):
+    """array_declaration : LET ID COLON array_type"""
+    p[0] = ArrayDeclaration(p[2], p[4], None, False, p.lineno(1), -1)
+
+
+########################################
+def p_array_type_r(p):
+    """array_type : BRACKET_O array_type SEMICOLON expression BRACKET_C"""
+    p[0] = ArrayDefType(True, p[2], p[4])
+    # print("p_array_type_r")
+
+
+def p_array_type(p):
+    """array_type : BRACKET_O variable_type SEMICOLON expression BRACKET_C"""
+    p[0] = ArrayDefType(False, p[2], p[4])
+    # print("p_array_type")
+
+
+########################################
+
+def p_array_expression_list(p):
+    """array_expression : BRACKET_O expression_list BRACKET_C"""
+    p[0] = ArrayExpression(p[2], False, None, p.lineno(1), -1)
+    # print("p_array_expression_list")
+
+
+def p_array_expression_expansion(p):
+    """array_expression : BRACKET_O expression SEMICOLON expression BRACKET_C"""
+    p[0] = ArrayExpression(p[2], True, p[4], p.lineno(1), -1)
+    # print("p_array_expression_expansion")
+
+
+def p_expression_list_r(p):
+    """expression_list : expression_list COMMA expression
+    | expression_list COMMA array_expression"""
+    p[1].append(p[3])
+    p[0] = p[1]
+    # print("p_expression_list_r")
+
+
+def p_expression_list(p):
+    """expression_list : expression
+    | array_expression"""
+    p[0] = [p[1]]
+    # print("p_expression_list")
 
 
 # ###############################################FUNCTION DECLARATION###################################################
@@ -176,7 +254,7 @@ def p_func_var_2(p):
 #     p[0] = IDTuple(p[1], _type, True, True, dic, None)
 
 
-#######################################################################################################################
+# ##################################################Variable Types######################################################
 
 
 def p_variable_type_i64(p):
@@ -222,6 +300,14 @@ def p_variable_type_string(p):
 #######################################################################################################################
 #######################################################################################################################
 
+
+# Will this break the parser?
+def p_expression_array_expression(p):
+    """expression : array_expression"""
+    p[0] = p[1]
+
+
+#######################################################################################################################
 def p_expression_integer(p):
     """expression : INTEGER"""
     p[0] = Literal(p[1], ExpressionType.INT, p.lineno(1), -1)
@@ -343,7 +429,6 @@ def p_expression_logic_and(p):
 def p_expression_logic_not(p):
     """expression : LOGIC_NOT expression"""
     p[0] = Logic(p[2], p[2], LogicType.LOGIC_NOT, p.lineno(1), -1)
-
 
 
 def p_epsilon(p):

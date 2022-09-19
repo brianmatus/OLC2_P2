@@ -2,6 +2,8 @@ import secrets
 from typing import List, Tuple
 
 from element_types.c_expression_type import ExpressionType
+from abstract.expression import Expression
+
 
 from errors.lexic_error import LexicError
 from errors.semantic_error import SemanticError
@@ -93,13 +95,72 @@ main_environment = None  # Type Environment. Due to circular import this is set 
 #     return table
 
 
+def match_dimensions(supposed: List, arr: List[Expression]) -> bool:
+    if not isinstance(arr, list):  # Reached end of array
+        if len(supposed) != 0:  # But chain is not completed
+            # print("False: end of array but not chain")
+            return False
+        # print("True: end of array and chain")
+        return True
+
+    else:  # Array is still nested
+
+        if len(supposed) == 0:  # But chain is empty
+            # print("False:end of chain but not array")
+            return False
+        # dont you dare return true :P Keep checking more nested levels
+
+    if len(arr) is not supposed[0]:
+        # print(f'False: supposed-array mismatch: {len(arr)}->{supposed[0]}')
+        return False
+
+    index = supposed.pop(0)
+
+    for i in range(index):
+        r: bool = match_dimensions(supposed[:], arr[i].value)
+        if not r:
+            # print(f'False:{i}th child returned False')
+            return False
+
+    # All children and self returned True
+    return True
 
 
+def match_array_type(supposed: ExpressionType, arr: List[Expression]) -> bool:
+
+    if len(arr) == 0: #TODO this breaks array? idk
+        return True
+
+    if not isinstance(arr[0].value, list):  # Reached last array
+        for item in arr:
+            if item.expression_type is not supposed:
+                return False
+        return True
+
+    for i in range(len(arr)):
+        r: bool = match_array_type(supposed, arr[i].value)
+        if not r:
+            return False
+
+    # All children and self returned True
+    return True
 
 
+def flatten_array(arr: List[Expression]) -> List[Expression]:
 
+    if len(arr) == 0: #TODO this breaks array? idk
+        return []
 
+    if not isinstance(arr[0].value, list):  # Reached last array
+        return arr
 
+    flat = []
+
+    for i in range(len(arr)):
+        flat = flat + flatten_array(arr[i].value)
+
+    # All children flatenned
+    return flat
 
 
 
@@ -125,21 +186,21 @@ def is_arithmetic_pure_literals(expr) -> bool:
 
 def log_lexic_error(foreign: str, row: int, column: int):
     global console_output
-    lexic_error_list.append(str(LexicError(f'Signo <{foreign}> no reconocido', row, column)))
+    lexic_error_list.append(LexicError(f'Signo <{foreign}> no reconocido', row, column))
     print(f'Logged Lexic Error:{row}-{column} -> Signo <{foreign}> no reconocido')
     console_output += f'[row:{row},column:{column}]Error Lexico: <{foreign} no reconocido\n'
 
 
 def log_syntactic_error(reason: str, row: int, column: int):
     global console_output
-    syntactic_error_list.append(str(SyntacticError(reason, row, column)))
+    syntactic_error_list.append(SyntacticError(reason, row, column))
     print(f'Logged Syntactic Error:{row}-{column} -> {reason}')
     console_output += f'[row:{row},column:{column}]Error Sintáctico:{reason} \n'
 
 
 def log_semantic_error(reason: str, row: int, column: int):
     global console_output
-    semantic_error_list.append(str(SemanticError(reason, row, column)))
+    semantic_error_list.append(SemanticError(reason, row, column))
     print(f'Logged Semantic Error:{row}-{column} -> {reason}')
     console_output += f'[row:{row},column:{column}]Error Semántico:{reason}\n'
 

@@ -19,7 +19,7 @@ class Expression:
 
     def execute(self, environment: Environment) -> ValueTuple:
         print("ABSTRACT EXPRESSION EXECUTE CALLED, CHECK LMAO")
-        return ValueTuple("abstract", ExpressionType.VOID, is_mutable=False, content_type=None, capacity=[],
+        return ValueTuple("abstract", expression_type=ExpressionType.VOID, is_mutable=False, content_type=None, capacity=[],
                           generator=None, is_tmp=False,
                           true_label=[], false_label=[])
 

@@ -182,6 +182,9 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
             _symbol_table = main_func.environment.symbol_table
 
         print(final_generator.set_as_final_code())
+        output_file = open('output.rs', "w")
+        output_file.write(final_generator.get_code())
+        output_file.close()
 
         print("-------------------------------------------------------------------------------------------------------")
 

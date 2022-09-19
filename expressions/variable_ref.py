@@ -31,7 +31,7 @@ class VariableReference(Expression):
             return ValueTuple(value=the_symbol.value, expression_type=the_symbol._type, is_mutable=the_symbol.is_mutable,
                               content_type=the_symbol.content_type, capacity=the_symbol.capacity)
 
-        return ValueTuple(value=the_symbol.position, expression_type=the_symbol.symbol_type, is_mutable=the_symbol.is_mutable,
+        return ValueTuple(value=the_symbol.stack_position, expression_type=the_symbol.symbol_type, is_mutable=the_symbol.is_mutable,
                           content_type=None, capacity=None)
 
     def ast(self) -> ASTReturn:

@@ -1,6 +1,7 @@
 import global_config
-from typing import Tuple, List
+from typing import List
 
+debug_prints = True
 
 class Generator:
 
@@ -41,6 +42,34 @@ class Generator:
     ##############################################################
 
     def add_main_enclosure(self):
+
+        if debug_prints:
+            self.code = [f"int main(){{\n"
+                         f"P = 10;\n"
+                         f"H = 15;\n"
+                         f"{self.get_code()}\n"
+                         f'printf("Final H:%f\\n", H);\n'
+                         f'printf("Final P:%f\\n", P);\n'
+                         f'printf("STACK:\\n[\\n");\n'
+                         f'int i;\n'
+                         
+                         
+                         f'for(i = 0; i < sizeof(STACK) / sizeof(double); i++){{\n'
+                         f'printf("%i : %.2f\\n", i, STACK[i]);\n'
+                         f'}}\n'
+                         f'printf("]\\n");\n'
+                         f'printf("HEAP:\\n[\\n");\n'
+                         f'for(i = 0; i < sizeof(HEAP) / sizeof(double); i++){{\n'
+                         f'printf("%i : %.2f\\n", i, HEAP[i]);\n'
+                         f'}}\n'
+                         f'printf("]\\n");\n'
+                         
+                         
+                         
+                         f"return 0;\n"
+                         f"}}\n"]
+            return
+
         self.code = [f"int main(){{\n"
                      f"{self.get_code()}\n"
                      f"return 0;\n"
@@ -56,8 +85,8 @@ class Generator:
     def add_headers_on_top(self):
         self.code = [f'#include <stdio.h>\n'
                      f'#include <math.h>\n'
-                     f'double HEAP[1000];\n'
-                     f'double STACK[78000];\n'
+                     f'double HEAP[40];\n'
+                     f'double STACK[20];\n'
                      f'double P;\n'
                      f'double H;\n\n'
                      f'{self.get_code()}']
@@ -130,3 +159,6 @@ class Generator:
 
     def add_error_return(self, return_code: str):
         self.code.append(f"return {return_code};")
+
+    def add_comment(self, msg):
+        self.code.append(f"//{msg}")

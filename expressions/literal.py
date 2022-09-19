@@ -22,6 +22,7 @@ class Literal(Expression):
 
         if self.expression_type == ExpressionType.STRING_PRIMITIVE:
             generator = Generator()
+            generator.add_comment(f"-----String: {self.value}-----")
             t = generator.new_temp()
             generator.add_expression(t, "H", "", "")
 
