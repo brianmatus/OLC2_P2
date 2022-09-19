@@ -27,6 +27,15 @@ class Declaration(Instruction):
 
     def execute(self, env: Environment) -> ExecReturn:
 
+        from expressions.array_expression import ArrayExpression
+        from instructions.array_declaration import ArrayDeclaration
+        # Do we have an impostor?
+        if isinstance(self.expression, ArrayExpression):
+            # sus
+            correct_one = ArrayDeclaration(self.variable_id, None, self.expression, self.is_mutable,
+                                           self.line, self.column)
+            return correct_one.execute(env)
+
         # Using not_init instead
         if self.expression is None:
             # tmp_var: Symbol = env.save_variable(self.variable_id, self.expression_type, self.is_mutable, False,

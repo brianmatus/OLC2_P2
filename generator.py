@@ -48,6 +48,7 @@ class Generator:
                          f"P = 10;\n"
                          f"H = 15;\n"
                          f"{self.get_code()}\n"
+                         f"//--------------------------DEBUG INFO-----------------\n"
                          f'printf("Final H:%f\\n", H);\n'
                          f'printf("Final P:%f\\n", P);\n'
                          f'printf("STACK:\\n[\\n");\n'
@@ -72,6 +73,7 @@ class Generator:
 
         self.code = [f"int main(){{\n"
                      f"{self.get_code()}\n"
+                     f"//----------------------------CODE END------------------"
                      f"return 0;\n"
                      f"}}"]
 

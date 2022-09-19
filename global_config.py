@@ -95,6 +95,23 @@ main_environment = None  # Type Environment. Due to circular import this is set 
 #     return table
 
 
+def extract_dimensions_to_dict(arr) -> dict:
+    if not isinstance(arr, list):  # Same deepness, so no array
+        return {}
+    r = {}
+    i = 1
+    layer = arr
+    while True:
+        if isinstance(layer[0].value, list):
+            r[i] = len(layer)
+            layer = layer[0].value
+            i += 1
+            continue
+        r[i] = len(layer)
+        break
+    return r
+
+
 def match_dimensions(supposed: List, arr: List[Expression]) -> bool:
     if not isinstance(arr, list):  # Reached end of array
         if len(supposed) != 0:  # But chain is not completed
