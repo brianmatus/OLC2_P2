@@ -120,7 +120,7 @@ class ArrayDeclaration(Instruction):
 
         from generator import Generator
         generator = Generator()
-        generator.add_comment(f"-------------------------------Array Assignment of {self.variable_id}"
+        generator.add_comment(f"-------------------------------Array Declaration of {self.variable_id}"
                               f"-------------------------------")
         t = generator.new_temp()
         generator.add_expression(t, "P", the_symbol.stack_position, "+")

@@ -27,11 +27,11 @@ class Symbol:
 
 
 class ArraySymbol:
-    def __init__(self, symbol_id: str, content_type: ExpressionType, dimensions: dict, stack_position,
+    def __init__(self, symbol_id: str, symbol_type: ExpressionType, dimensions: dict, stack_position,
                  is_init: bool, is_mutable: bool):
         self.stack_position = stack_position
         self.symbol_id = symbol_id
-        self.content_type = content_type
+        self.symbol_type = symbol_type
         self.is_init = is_init
         self.is_mutable = is_mutable
         self.dimensions: {} = dimensions
@@ -86,7 +86,7 @@ class Environment:
 
         return the_symbol
 
-    def get_variable(self, _id: str) -> Union[Symbol, None]:
+    def get_variable(self, _id: str) -> Union[Symbol, ArraySymbol, None]:
         t = self.symbol_table.get(_id)
         if t is not None:
             return t

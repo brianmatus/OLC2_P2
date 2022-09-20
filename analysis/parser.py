@@ -18,6 +18,7 @@ from instructions.declaration import Declaration
 from instructions.assignment import Assigment
 
 from instructions.array_declaration import ArrayDeclaration
+from instructions.array_assignment import ArrayAssignment
 
 from instructions.function_declaration import FunctionDeclaration
 # ################################EXPRESSIONS#########################################
@@ -55,8 +56,6 @@ precedence = (
 )
 
 
-
-
 def p_marian(p):  # M&B ♥
     """marian : instructions"""
     p[0] = p[1]
@@ -78,6 +77,7 @@ def p_instruction(p):  # since all here are p[0] = p[1] (except void_inst) add a
     | var_assignment SEMICOLON
     | array_declaration SEMICOLON
     | function_declaration
+    | array_assignment SEMICOLON
     """
     p[0] = p[1]
 
@@ -110,7 +110,7 @@ def p_var_assignment(p):
 
 
 # ###########################################ARRAY VARIABLE DECLARATION ###############################################
-def p_array_declaration_1(p):    # TODO array_expression instead of expression
+def p_array_declaration_1(p):
     """array_declaration : LET MUTABLE ID COLON array_type EQUAL expression"""
     p[0] = ArrayDeclaration(p[3], p[5], p[7], True, p.lineno(1), -1)
     # print("p_array_declaration_1")
@@ -171,6 +171,30 @@ def p_expression_list(p):
     | array_expression"""
     p[0] = [p[1]]
     # print("p_expression_list")
+
+
+# ###################################################ARRAY ASSIGNMENT###################################################
+def p_total_array_assignment(p):
+    """array_assignment : ID EQUAL expression
+    | ID EQUAL array_expression"""
+    p[0] = ArrayAssignment(p[1], [], p[3], p.lineno(1), -1)
+
+
+def p_array_assignment(p):
+    """array_assignment : ID array_indexes EQUAL expression
+    | ID array_indexes EQUAL array_expression"""
+    p[0] = ArrayAssignment(p[1], p[2], p[4], p.lineno(1), -1)
+
+
+def p_array_indexes_r(p):
+    """array_indexes : array_indexes BRACKET_O expression BRACKET_C"""
+    p[1].append(p[3])
+    p[0] = p[1]
+
+
+def p_array_indexes(p):
+    """array_indexes : BRACKET_O expression BRACKET_C"""
+    p[0] = [p[2]]
 
 
 # ###############################################FUNCTION DECLARATION###################################################

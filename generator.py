@@ -45,8 +45,8 @@ class Generator:
 
         if debug_prints:
             self.code = [f"int main(){{\n"
-                         f"P = 10;\n"
-                         f"H = 15;\n"
+                         f"P = 0;\n"
+                         f"H = 0;\n"
                          f"{self.get_code()}\n"
                          f"//--------------------------DEBUG INFO-----------------\n"
                          f'printf("Final H:%f\\n", H);\n'
@@ -124,6 +124,7 @@ class Generator:
         self.code.append(f"printf(\"%{type_print}\",{value});")
 
     def add_print_message(self, msg: str):
+        self.code.append(f"// Printing:{msg}")
         for char in msg:
             self.code.append(f"printf(\"%c\",{str(ord(char))});")
 
@@ -159,6 +160,8 @@ class Generator:
     def add_set_stack(self, index: str, value: str):
         self.code.append(f'STACK[(int){index}] = {value};')
 
+    # 1: Division by 0
+    # 2: Index out of bounds
     def add_error_return(self, return_code: str):
         self.code.append(f"return {return_code};")
 

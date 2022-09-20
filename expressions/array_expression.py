@@ -39,8 +39,10 @@ class ArrayExpression(Expression):
             for i in range(20):
                 print(f"array_expression.py::({i}/20 warnings) as expansion, to be implemented")
 
+        from generator import Generator
+
         # Definition by list
         return ValueTuple(value=self.value, expression_type=ExpressionType.ARRAY, is_mutable=False,
                           content_type=ExpressionType.VOID, capacity=None, false_label=[], true_label=[], is_tmp=False,
-                          generator=None)
+                          generator=Generator())
 

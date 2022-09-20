@@ -183,7 +183,7 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
 
         print(final_generator.set_as_final_code())
         output_file = open('C:\\Users\\Matus\\Documents\\USAC\\Compi2\\Proyecto2\\c-interp\\main.c', "w")
-        output_file.write(final_generator.get_code())
+        output_file.write(str(final_generator.get_code()))
         output_file.close()
 
         print("-------------------------------------------------------------------------------------------------------")
