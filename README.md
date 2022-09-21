@@ -10,9 +10,10 @@ Por inspirarme a seguir adelante y mejorar, aún cuando no estás conmigo.
 <br />ruinas de tu voz se asoman en mis oídos.
 <br />Aún te fumo por la noche,
  <br />"aún" se ha vuelto perpetuo.
+ <br/> My 42.
 
 
-![example workflow](https://github.com/brianmatus/OLC2_P2/actions/workflows/main.yml/badge.svg)
+![workflow](https://github.com/brianmatus/OLC2_P2/actions/workflows/main.yml/badge.svg)
 
 
 DB-RUST es un lenguaje basado en Rust para la utilizacion de bases de datos. La segunda etapa de este proyecto convierte el codigo ingresado de DB-RUST a un Codigo de tres direcciones en C++.
