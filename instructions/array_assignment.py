@@ -130,10 +130,15 @@ class ArrayAssignment(Instruction):
         # # print("the replacement:")
         # # print(expr)
 
-
         if len(dimensions) == 0:
-            flat_array = global_config.flatten_array(expr.value)
 
+            r = global_config.match_dimensions(list(the_symbol.dimensions.values()), expr.value)
+            if not r:
+                error_msg = f'Las dimensiones del array definidas anteriormente no son iguales a las ingresadas'
+                log_semantic_error(error_msg, self.line, self.column)
+                raise SemanticError(error_msg, self.line, self.column)
+
+            flat_array = global_config.flatten_array(expr.value)
             from generator import Generator
             generator = Generator()
             generator.add_comment(f"-------------------------------Array Assignment of {self.variable_id}"
