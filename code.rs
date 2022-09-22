@@ -3,3 +3,8 @@ fn main () {
     x = [[5,6],[7,8]];
 }
 
+fn ola(x: i64) {
+
+    let mut y = 5;
+
+}

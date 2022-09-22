@@ -14,7 +14,11 @@ lexic_error_list: List[LexicError] = []
 syntactic_error_list: List[SyntacticError] = []
 semantic_error_list: List[SemanticError] = []
 tmp_symbol_table = []
-tmp_i = 0
+
+# t0 is reserved for the return value of functions
+# t1 is reserved for func_end_return_to integer
+# t2 is reserved for func_has_returned
+tmp_i = 3
 label_i = 0
 
 
@@ -22,6 +26,7 @@ ALLOW_NESTED_VARIABLE_OVERRIDE = True
 unique_counter = 0
 console_output: str = ""
 function_list: dict = {}  # func_name:str, func:func_decl
+function_call_list: dict = {}
 
 main_environment = None  # Type Environment. Due to circular import this is set in main
 

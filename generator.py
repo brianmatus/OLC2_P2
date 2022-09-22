@@ -3,6 +3,7 @@ from typing import List
 
 debug_prints = True
 
+
 class Generator:
 
     def __init__(self) -> None:
@@ -87,8 +88,8 @@ class Generator:
     def add_headers_on_top(self):
         self.code = [f'#include <stdio.h>\n'
                      f'#include <math.h>\n'
-                     f'double HEAP[40];\n'
-                     f'double STACK[20];\n'
+                     f'double HEAP[30];\n'
+                     f'double STACK[50];\n'
                      f'double P;\n'
                      f'double H;\n\n'
                      f'{self.get_code()}']

@@ -1,0 +1,3 @@
+Check for arrays passed to func calls
+Check for vectors passed to func calls
+Check for function return type

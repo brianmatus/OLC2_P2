@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, List
 
 import global_config
 
@@ -6,6 +6,7 @@ from errors.semantic_error import SemanticError
 from element_types.c_expression_type import ExpressionType
 from elements.value_tuple import ValueTuple
 
+from enum import Enum
 
 # class Value:
 #     def __init__(self, value: str, is_tmp: bool, e_type: ExpressionType) -> None:
@@ -37,13 +38,28 @@ class ArraySymbol:
         self.dimensions: {} = dimensions
 
 
+TransferType = Enum('ElementType',
+                    ' '.join([
+                        'BREAK',
+                        'CONTINUE',
+                        'RETURN',
+                    ]))
+
+
+class TransferInstruction:
+    def __init__(self, transfer_type: TransferType, label_to_jump: str):
+        self.transfer_type = transfer_type
+        self.label_to_jump = label_to_jump
+
+
 class Environment:
     def __init__(self, parent_environment):
 
-        self.parent_environment: Environment = parent_environment
+        self.parent_environment: Environment = parent_environment  # TODO weak ref?
         self.symbol_table: dict = {}
         self.size = 0
         self.children_environment = []
+        self.transfer_queue: List[TransferInstruction] = []
 
         if self.parent_environment is not None:
             pass
@@ -146,6 +162,9 @@ class Environment:
         the_symbol.is_init = True
 
         return the_symbol
+
+    def queue_transfer(self, transfer_type, label_to_jump):
+        self.transfer_queue.append(TransferInstruction(transfer_type, label_to_jump))
 
     def remove_child(self, child):  # child: Environment
         self.children_environment = list(filter(lambda p: p is not child, self.children_environment))

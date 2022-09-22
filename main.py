@@ -13,6 +13,7 @@ from abstract.instruction import Instruction
 from elements.c_env import Environment
 
 from instructions.function_declaration import FunctionDeclaration
+from instructions.function_call import FunctionCallI
 
 
 from errors.lexic_error import LexicError
@@ -66,10 +67,7 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
         print(err)
         print("Unhandled semantic error?, custom semantic?")
         # already logged, do nothing
-
         global_config.main_environment = Environment(None)
-
-
         return {
             "console_output": global_config.console_output,
             "lexic_errors": global_config.lexic_error_list,
@@ -77,8 +75,6 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
             "semantic_errors": global_config.semantic_error_list,
             "symbol_table": []
         }
-
-
         # return [str(global_config.lexic_error_list),
         #                    str(global_config.syntactic_error_list), str(global_config.semantic_error_list),
         #                    'digraph G {\na[label="PARSE ERROR :( (semantic)"]\n}',
@@ -87,9 +83,7 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
     except SyntacticError as err:
         print("SYNTACTIC ERROR:")
         print(err)
-
         global_config.main_environment = Environment(None)
-
         return {
             "console_output": global_config.console_output,
             "lexic_errors": global_config.lexic_error_list,
@@ -97,12 +91,10 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
             "semantic_errors": global_config.semantic_error_list,
             "symbol_table": []
         }
-
         # return [global_config.lexic_error_list,
         #                    global_config.syntactic_error_list, global_config.semantic_error_list,
         #                    'digraph G {\na[label="PARSE ERROR :( (syntactic)"]\n}',
         #                    global_config.console_output, []]
-
 
     except Exception as err:
         print("Unhandled (lexic?)/semantic error?")
@@ -134,18 +126,30 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
 
     print(instruction_set)
 
+    synthetic_call = FunctionCallI("main", [], -1, -1)
+
     # Register all functions and modules
     try:
         instruction: Instruction
-        for instruction in instruction_set:
+        final_generator: Generator = Generator()
+        main_start = final_generator.new_label()
+        final_generator.add_goto(main_start)
 
+
+        for instruction in instruction_set:
             if not isinstance(instruction, FunctionDeclaration):  # Or Module declaration
                 error_msg = f"No se permiten declaraciones globales."
                 global_config.log_semantic_error(error_msg, instruction.line, instruction.column)
                 raise SemanticError(error_msg, instruction.line, instruction.column)
+            a = instruction.execute(global_config.main_environment)
+            final_generator.combine_with(a.generator)
+            if a.propagate_continue or a.propagate_break:
+                error_msg = f"break/continue colocado erroneamente"
+                global_config.log_semantic_error(error_msg, instruction.line, instruction.column)
+                raise SemanticError(error_msg, instruction.line, instruction.column)
 
-            # print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-            instruction.execute(global_config.main_environment)
+            if a.propagate_method_return:
+                break
 
         # TODO main_func: FunctionDeclaration = global_config.function_list.get("main")
         main_func = global_config.function_list.get("main")
@@ -161,30 +165,18 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
             # No need to raise, they will only get ignored
             # raise SemanticError(error_msg, -1, -1)
 
-        # TODO "Abandonen la esperanza todos los que entren aquí"
-        final_generator: Union[Generator, None] = None
-        for instruction in main_func.instructions:
-            a = instruction.execute(main_func.environment)
-            if final_generator is None:
-                final_generator = a.generator
-            else:
-                final_generator.code = final_generator.code + a.generator.code
+        # TODO "Apartir de aqui todo vale madre"
+        final_generator.add_label([main_start])
+        final_generator.combine_with(synthetic_call.execute(global_config.main_environment).generator)
+        final_generator.add_comment("<<<<<<<<<<<<<<<<<<<<End of program>>>>>>>>>>>>>>>>>>")
 
-
-            if a.propagate_continue or a.propagate_break:
-                error_msg = f"break/continue colocado erroneamente"
-                global_config.log_semantic_error(error_msg, instruction.line, instruction.column)
-                raise SemanticError(error_msg, instruction.line, instruction.column)
-
-            if a.propagate_method_return:
-                break
-
-            _symbol_table = main_func.environment.symbol_table
-
+        _symbol_table = main_func.environment.symbol_table
         print(final_generator.set_as_final_code())
         output_file = open('C:\\Users\\Matus\\Documents\\USAC\\Compi2\\Proyecto2\\c-interp\\main.c', "w")
         output_file.write(str(final_generator.get_code()))
         output_file.close()
+
+
 
         print("-------------------------------------------------------------------------------------------------------")
 
