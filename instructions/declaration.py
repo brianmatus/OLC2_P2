@@ -55,17 +55,18 @@ class Declaration(Instruction):
         expr: Expression = self.expression
         # print(expr)
 
+        result: ValueTuple = expr.execute(env)
         # Infer if not explicitly specified
         if self.expression_type is None:
-            self.expression_type = expr.expression_type
+            self.expression_type = result.expression_type
 
         # bool is a special type
-        if expr.expression_type == ExpressionType.BOOL:
+        if result.expression_type == ExpressionType.BOOL:
 
             generator = Generator()
             generator.add_comment(f"-------------------------------Declaration of {self.variable_id}"
                                   f"-------------------------------")
-            result: ValueTuple = expr.execute(env)
+
             generator.combine_with(result.generator)
 
             the_symbol: Symbol = env.save_variable(self.variable_id, self.expression_type,
@@ -88,8 +89,7 @@ class Declaration(Instruction):
                               propagate_method_return=False, propagate_continue=False, propagate_break=False)
 
         # Check same type
-        if expr.expression_type == self.expression_type:
-            result: ValueTuple = expr.execute(env)
+        if result.expression_type == self.expression_type:
             the_symbol: Symbol = env.save_variable(self.variable_id, self.expression_type,
                                                    self.is_mutable, True, self.line, self.column)
 
@@ -100,6 +100,7 @@ class Declaration(Instruction):
             generator.combine_with(result.generator)
 
             t = generator.new_temp()
+            generator.add_comment("declaration::Set value")
             generator.add_expression(t, "P", the_symbol.stack_position, "+")
             generator.add_set_stack(t, str(result.value))
             return ExecReturn(generator=generator,

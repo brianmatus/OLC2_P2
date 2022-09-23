@@ -13,4 +13,5 @@ ExpressionType = Enum('ElementType',
                           'STRING_CLASS',  # class (using .to_owned() or .to_string()
                           'ARRAY',  # only used internally
                           'VECTOR',
+                          'NON_SET_TYPE'
                       ]))

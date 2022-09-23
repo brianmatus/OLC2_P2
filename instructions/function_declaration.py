@@ -41,7 +41,16 @@ class FunctionDeclaration(Instruction):
 
     def execute(self, env: Environment) -> ExecReturn:
         self.environment = Environment(env)
-        self.environment.size = len(self.params)  # This will be set by func_call, space is just allocated
+
+        for param in self.params:
+            if param.expression_type == ExpressionType.ARRAY:
+                self.environment.save_variable_array(param.variable_id, param.expression_type, param.dimensions,
+                                                     param.is_mutable, True, self.line, self.column)
+            # TODO check for vector
+            # Any other normal expression:
+            else:
+                self.environment.save_variable(param.variable_id, param.expression_type, param.is_mutable,
+                                               True, self.line, self.column)
 
         final_generator: Generator = Generator()
         final_generator.add_comment(f"<<<-------------------------------Function Declaration of {self.function_id}"

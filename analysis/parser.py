@@ -12,6 +12,7 @@ from elements.match_expression_clause import MatchExpressionClause
 from elements.c_env import Environment
 from elements.id_tuple import IDTuple
 from element_types.array_def_type import ArrayDefType
+from element_types.func_call_arg import FuncCallArg
 
 # ################################INSTRUCTIONS#########################################
 from instructions.declaration import Declaration
@@ -21,6 +22,7 @@ from instructions.array_declaration import ArrayDeclaration
 from instructions.array_assignment import ArrayAssignment
 
 from instructions.function_declaration import FunctionDeclaration
+from instructions.function_call import FunctionCallI
 # ################################EXPRESSIONS#########################################
 from element_types.arithmetic_type import ArithmeticType
 from element_types.logic_type import LogicType
@@ -28,6 +30,7 @@ from expressions.literal import Literal
 from expressions.arithmetic import Arithmetic
 from expressions.logic import Logic
 from expressions.array_expression import ArrayExpression
+from expressions.variable_ref import VariableReference
 
 
 tokens = lexer.tokens
@@ -47,9 +50,9 @@ precedence = (
     ('left', 'MULT', 'DIV', 'MOD'),
     # ('left', 'AS'),
     ('nonassoc', 'UMINUS', "LOGIC_NOT"),  # nonassoc according to rust, i think 'right'
-    # ('nonassoc', 'PREC_VAR_REF'),
+    ('nonassoc', 'PREC_VAR_REF'),
     # ('nonassoc', 'DOT'),
-    # ('nonassoc', 'PREC_FUNC_CALL'),
+    ('nonassoc', 'PREC_FUNC_CALL'),
     # ('nonassoc', 'PREC_METHOD_CALL'),
     # ('nonassoc', 'PREC_ARRAY_REF')
 
@@ -78,6 +81,7 @@ def p_instruction(p):  # since all here are p[0] = p[1] (except void_inst) add a
     | array_declaration SEMICOLON
     | function_declaration
     | array_assignment SEMICOLON
+    | function_call_i SEMICOLON
     """
     p[0] = p[1]
 
@@ -195,6 +199,42 @@ def p_array_indexes_r(p):
 def p_array_indexes(p):
     """array_indexes : BRACKET_O expression BRACKET_C"""
     p[0] = [p[2]]
+
+
+# ################################################FUNCTION CALL I#######################################################
+def p_function_call_i(p):
+    """function_call_i : ID PARENTH_O func_call_args PARENTH_C %prec PREC_FUNC_CALL"""
+    p[0] = FunctionCallI(p[1], p[3], p.lineno(1), -1)
+
+
+def p_func_call_args_r(p):
+    """func_call_args : func_call_args COMMA func_call_arg"""
+    p[0] = p[1] + [p[3]]
+
+
+def p_func_call_args_1(p):
+    """func_call_args : func_call_arg"""
+    p[0] = [p[1]]
+
+
+def p_func_call_args_2(p):
+    """func_call_args : epsilon"""
+    p[0] = list()
+
+
+def p_func_call_arg_1(p):
+    """func_call_arg : expression"""
+    p[0] = FuncCallArg(p[1], False, False)
+
+
+def p_func_call_arg_2(p):
+    """func_call_arg : AMPERSAND expression"""
+    p[0] = FuncCallArg(p[2], True, False)
+
+
+def p_func_call_arg_3(p):
+    """func_call_arg : AMPERSAND MUTABLE expression"""
+    p[0] = FuncCallArg(p[3], True, True)
 
 
 # ###############################################FUNCTION DECLARATION###################################################
@@ -331,7 +371,13 @@ def p_expression_array_expression(p):
     p[0] = p[1]
 
 
-#######################################################################################################################
+# ###################################################REFERENCES#########################################################
+def p_var_ref_e(p):
+    """expression : ID %prec PREC_VAR_REF"""
+    p[0] = VariableReference(p[1], p.lineno(1), -1)
+
+
+# ######################################################################################################################
 def p_expression_integer(p):
     """expression : INTEGER"""
     p[0] = Literal(p[1], ExpressionType.INT, p.lineno(1), -1)

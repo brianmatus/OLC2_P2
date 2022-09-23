@@ -38,6 +38,18 @@ class ArraySymbol:
         self.dimensions: {} = dimensions
 
 
+class VectorSymbol:
+    def __init__(self, vector_id: str, vector_type: ExpressionType, deepness: int, value,
+                 is_mutable: bool, capacity: List[int]):
+        self.value = value
+        self.vector_id: str = vector_id
+        self.symbol_type: ExpressionType = vector_type
+        self.is_mutable: bool = is_mutable
+        self.deepness: int = deepness
+        # FIXME List[int] instead of int: for passing as reference to func (or other envs in general)
+        self.capacity: List[int] = capacity
+
+
 TransferType = Enum('ElementType',
                     ' '.join([
                         'BREAK',
@@ -112,6 +124,18 @@ class Environment:
             return None
 
         return self.parent_environment.get_variable(_id)
+
+    def get_variable_p_deepness(self, _id: str, r) -> int:
+        t = self.symbol_table.get(_id)
+        if t is not None:
+            if r == 0:
+                return 0-t.stack_position
+            return r - t.stack_position
+
+        # hit top
+        if self.parent_environment is None:
+            return -99999
+        return self.parent_environment.get_variable_p_deepness(_id, r+self.parent_environment.size)
 
     def set_variable(self, _id: str, result: ValueTuple, line: int, column: int) -> Union[Symbol, ArraySymbol]:
         the_symbol: Union[Symbol, ArraySymbol] = self.get_variable(_id)

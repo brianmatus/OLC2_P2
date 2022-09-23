@@ -31,6 +31,7 @@ class Literal(Expression):
                 generator.add_next_heap()
 
             generator.add_set_heap("H", "-1")
+            generator.add_next_heap()
 
             return ValueTuple(value=t, expression_type=self.expression_type, is_mutable=False,
                               content_type=self.expression_type, capacity=None, is_tmp=True, generator=generator,

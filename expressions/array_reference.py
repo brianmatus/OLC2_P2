@@ -34,8 +34,8 @@ class ArrayReference(Expression):
         for index in self.indexes:
             result = index.execute(environment)
 
-            if result._type not in [ElementType.INT, ElementType.USIZE] or isinstance(result.value, list):
-                error_msg = f'El acceso a array debe de ser con tipo entero/usize (Se obtuvo {result._type.name})'
+            if result.symbol_type not in [ElementType.INT, ElementType.USIZE] or isinstance(result.value, list):
+                error_msg = f'El acceso a array debe de ser con tipo entero/usize (Se obtuvo {result.symbol_type.name})'
                 log_semantic_error(error_msg, self.line, self.column)
                 raise SemanticError(error_msg, self.line, self.column)
 
@@ -67,7 +67,7 @@ class ArrayReference(Expression):
                                   content_type=the_symbol.content_type, capacity=the_symbol.capacity)
 
             if isinstance(returning, list):
-                return ValueTuple(_type=the_symbol._type, value=returning, is_mutable=the_symbol.is_mutable,
+                return ValueTuple(_type=the_symbol.symbol_type, value=returning, is_mutable=the_symbol.is_mutable,
                                   content_type=the_symbol.content_type, capacity=the_symbol.capacity)
 
             return ValueTuple(_type=the_symbol.content_type, value=returning, is_mutable=the_symbol.is_mutable,
@@ -93,7 +93,7 @@ class ArrayReference(Expression):
         if isinstance(returning, ValueTuple):
             return ValueTuple(_type=returning._type, value=returning.value, is_mutable=the_symbol.is_mutable,
                               content_type=None, capacity=None)
-        return ValueTuple(_type=the_symbol._type, value=returning, is_mutable=the_symbol.is_mutable,
+        return ValueTuple(_type=the_symbol.symbol_type, value=returning, is_mutable=the_symbol.is_mutable,
                           content_type=None, capacity=None)
 
 
