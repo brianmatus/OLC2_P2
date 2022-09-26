@@ -57,6 +57,7 @@ class Logic(Expression):
                 true_label = generator.new_label()
                 false_label = generator.new_label()
                 generator.add_if(left.value, right.value, ">", true_label)
+                generator.add_goto(false_label)
                 return ValueTuple(None, ExpressionType.BOOL, False, generator, ExpressionType.BOOL, None, False,
                                   [true_label], [false_label])
 
@@ -67,6 +68,7 @@ class Logic(Expression):
                 true_label = generator.new_label()
                 false_label = generator.new_label()
                 generator.add_if(left.value, right.value, "<", true_label)
+                generator.add_goto(false_label)
                 return ValueTuple(None, ExpressionType.BOOL, False, generator, ExpressionType.BOOL, None, False,
                                   [true_label], [false_label])
 
@@ -76,6 +78,7 @@ class Logic(Expression):
                 true_label = generator.new_label()
                 false_label = generator.new_label()
                 generator.add_if(left.value, right.value, ">=", true_label)
+                generator.add_goto(false_label)
                 return ValueTuple(None, ExpressionType.BOOL, False, generator, ExpressionType.BOOL, None, False,
                                   [true_label], [false_label])
 
@@ -86,6 +89,7 @@ class Logic(Expression):
                 true_label = generator.new_label()
                 false_label = generator.new_label()
                 generator.add_if(left.value, right.value, "<=", true_label)
+                generator.add_goto(false_label)
                 return ValueTuple(None, ExpressionType.BOOL, False, generator, ExpressionType.BOOL, None, False,
                                   [true_label], [false_label])
 
@@ -95,6 +99,7 @@ class Logic(Expression):
                 true_label = generator.new_label()
                 false_label = generator.new_label()
                 generator.add_if(left.value, right.value, "==", true_label)
+                generator.add_goto(false_label)
                 return ValueTuple(None, ExpressionType.BOOL, False, generator, ExpressionType.BOOL, None, False,
                                   [true_label], [false_label])
 
@@ -104,6 +109,7 @@ class Logic(Expression):
                 true_label = generator.new_label()
                 false_label = generator.new_label()
                 generator.add_if(left.value, right.value, ">", true_label)
+                generator.add_goto(false_label)
                 return ValueTuple(None, ExpressionType.BOOL, False, generator, ExpressionType.BOOL, None, False,
                                   [true_label], [false_label])
 
@@ -113,7 +119,7 @@ class Logic(Expression):
                 generator = Generator()
                 generator.code = left.generator.code
                 generator.add_label(left.false_label)
-                generator.code = generator.code + right.generator.code
+                generator.combine_with(right.generator)
                 return ValueTuple(None, ExpressionType.BOOL, False, generator, ExpressionType.BOOL, None, False,
                                   left.true_label + right.true_label, right.false_label)
 
@@ -121,11 +127,12 @@ class Logic(Expression):
                 generator = Generator()
                 generator.code = left.generator.code
                 generator.add_label(left.true_label)
-                generator.code = generator.code + right.generator.code
+                generator.combine_with(right.generator)
                 return ValueTuple(None, ExpressionType.BOOL, False, generator, ExpressionType.BOOL, None, False,
                                   right.true_label, left.false_label + right.false_label)
+
             case LogicType.LOGIC_NOT:
-                left.generator.add_goto(left.false_label[0])  #FIXME idk?
+                # left.generator.add_goto(left.false_label[0])  #FIXME idk?
                 return ValueTuple(None, ExpressionType.BOOL, False, left.generator, ExpressionType.BOOL, None, False,
                                   left.false_label, left.true_label)
             case _:

@@ -2,6 +2,7 @@ import global_config
 from typing import List
 
 debug_prints = True
+add_comments = True
 
 
 class Generator:
@@ -10,6 +11,8 @@ class Generator:
         # self.generator = None
         self.code: list = []
         self.tempList: list = []
+        self.HEAP_SIZE = 100
+        self.STACK_SIZE = 50
 
     def get_used_temps(self) -> str:
         return ",".join([f"t{i}" for i in range(global_config.tmp_i)])
@@ -24,7 +27,7 @@ class Generator:
         return "\n".join(self.code)
 
     def combine_with(self, gen):  # gen: Generator
-        self.code = self.code + gen.code
+        self.code = self.code + gen.code[:]  # slice is ok? idk
 
     # tmp
     def new_temp(self) -> str:
@@ -66,15 +69,13 @@ class Generator:
                          f'}}\n'
                          f'printf("]\\n");\n'
                          
-                         
-                         
                          f"return 0;\n"
                          f"}}\n"]
             return
 
         self.code = [f"int main(){{\n"
                      f"{self.get_code()}\n"
-                     f"//----------------------------CODE END------------------"
+                     f"//----------------------------CODE END------------------\n"
                      f"return 0;\n"
                      f"}}"]
 
@@ -88,8 +89,8 @@ class Generator:
     def add_headers_on_top(self):
         self.code = [f'#include <stdio.h>\n'
                      f'#include <math.h>\n'
-                     f'double HEAP[30];\n'
-                     f'double STACK[50];\n'
+                     f'double HEAP[{self.HEAP_SIZE}];\n'
+                     f'double STACK[{self.STACK_SIZE}];\n'
                      f'double P;\n'
                      f'double H;\n\n'
                      f'{self.get_code()}']
@@ -167,4 +168,6 @@ class Generator:
         self.code.append(f"return {return_code};")
 
     def add_comment(self, msg):
-        self.code.append(f"//{msg}")
+        if add_comments:
+            self.code.append(f"//{msg}")
+

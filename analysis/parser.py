@@ -23,6 +23,8 @@ from instructions.array_assignment import ArrayAssignment
 
 from instructions.function_declaration import FunctionDeclaration
 from instructions.function_call import FunctionCallI
+from instructions.conditional import Conditional
+from instructions.print_ln import PrintLN
 # ################################EXPRESSIONS#########################################
 from element_types.arithmetic_type import ArithmeticType
 from element_types.logic_type import LogicType
@@ -82,11 +84,70 @@ def p_instruction(p):  # since all here are p[0] = p[1] (except void_inst) add a
     | function_declaration
     | array_assignment SEMICOLON
     | function_call_i SEMICOLON
+    | if_else_elseif
+    | println_inst SEMICOLON
     """
     p[0] = p[1]
 
 
-# ###########################################SIMPLE VARIABLE DECLARATION ###############################################
+# ###########################################PRINTLN####################################################################
+def p_print_inst(p):
+    """println_inst : PRINT LOGIC_NOT PARENTH_O expression_list PARENTH_C"""
+    p[0] = PrintLN(p[4], False, p.lineno(1), -1)
+
+
+# ###########################################PRINTLN####################################################################
+def p_println_inst(p):
+    """println_inst : PRINTLN LOGIC_NOT PARENTH_O expression_list PARENTH_C"""
+    p[0] = PrintLN(p[4], True, p.lineno(1), -1)
+
+# ################################################IF/ELSEIF/ELSE########################################################
+def p_if_else_elseif_statement_1(p):
+    """if_else_elseif : if_s"""
+    p[0] = Conditional(p[1], p.lineno(1), -1)
+
+
+def p_if_else_elseif_statement_2(p):
+    """if_else_elseif : if_s else_s"""
+    p[0] = Conditional(p[1] + p[2], p.lineno(1), -1)
+
+
+def p_if_else_elseif_statement_3(p):
+    """if_else_elseif : if_s else_ifs"""
+    p[0] = Conditional(p[1] + p[2], p.lineno(1), -1)
+
+
+def p_if_else_elseif_statement_4(p):
+    """if_else_elseif : if_s else_ifs else_s"""
+    p[0] = Conditional(p[1] + p[2] + p[3], p.lineno(1), -1)
+
+
+def p_if_statement(p):
+    """if_s : IF expression KEY_O instructions KEY_C"""
+    p[0] = [ConditionClause(p[2], p[4], Environment(None))]
+
+
+def p_elseifs_r(p):
+    """else_ifs : else_ifs else_if"""
+    p[0] = p[1] + p[2]
+
+
+def p_elseifs(p):
+    """else_ifs :  else_if"""
+    p[0] = p[1]
+
+
+def p_elseif(p):
+    """else_if : ELSE IF expression KEY_O instructions KEY_C"""
+    p[0] = [ConditionClause(p[3], p[5], Environment(None))]
+
+
+def p_else(p):
+    """else_s : ELSE KEY_O instructions KEY_C"""
+    p[0] = [ConditionClause(None, p[3], Environment(None))]
+
+
+# ############################################SIMPLE VARIABLE DECLARATION###############################################
 def p_var_declaration_1(p):
     """var_declaration : LET MUTABLE ID COLON variable_type EQUAL expression"""
     p[0] = Declaration(p[3], p[5], p[7], True, p.lineno(1), -1)

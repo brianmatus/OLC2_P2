@@ -1,17 +1,14 @@
-fn ola(equisde:i64) {
-
-    let emcita : i64 = equisde;
-}
-
-
-
 fn main () {
-    let mut test = 25;
-    let mut test2 = 11;
-    let mut p : &str = "ola";
-    let mut x : [[i64;2];2] = [[1,2],[3,4]];
-    let mut y = x;
-    ola(4);
+    //let mut txt:[&str;3] = ["abc", "def", "ghi"];
+
+    //txt[0] = "xdd";
+
+    //let mut x = 1+2*2;
+    //println!("x:{}",x);
+    let mut a = [[[1,2,3],[4,5,6]]];
+   // let mut a = [1,2,3,4,5,6];
+    println!("a:{:?}",a);
+
 
 }
 

@@ -56,9 +56,9 @@ class VariableReference(Expression):
             pass
 
             return ValueTuple(value=heap_address, expression_type=ExpressionType.ARRAY,
-                              is_mutable=the_symbol.is_mutable, generator=generator,
-                              content_type=the_symbol.symbol_type, capacity=the_symbol.symbol_type, is_tmp=True,
-                              true_label=[""], false_label=[""])
+                              is_mutable=array_symbol.is_mutable, generator=generator,
+                              content_type=array_symbol.symbol_type, capacity=list(array_symbol.dimensions.values()),
+                              is_tmp=True, true_label=[""], false_label=[""])
 
         # TODO check, this may need stack referencing in a tmp and then assigning that, idk
         generator = Generator()
@@ -66,7 +66,7 @@ class VariableReference(Expression):
                               f"-------------------------------")
         # Normal symbols other than array and vectors should be copied
         stack_address = generator.new_temp()
-        generator.add_expression(stack_address, "P", the_symbol.stack_position, "+")
+        generator.add_expression(stack_address, "P", the_symbol.heap_position, "+")
 
         value = generator.new_temp()
         generator.add_get_stack(value, stack_address)
@@ -89,10 +89,11 @@ class VariableReference(Expression):
         generator.add_label([bucle_label])
         generator.add_get_heap(char, pointer)
 
-        generator.add_expression(char, "-1", "==", exit_label)
+        generator.add_if(char, "-1", "==", exit_label)
 
         generator.add_set_heap("H", char)
         generator.add_next_heap()
+        generator.add_expression(pointer, pointer, "1", "+")
         generator.add_goto(bucle_label)
         generator.add_label([exit_label])
         generator.add_set_heap("H", "-1")

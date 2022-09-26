@@ -129,17 +129,57 @@ class Arithmetic(Expression):
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
                     new_tmp = generator.new_temp()
-                    generator.code = left.generator.code
-                    generator.code = generator.code + right.generator.code
+                    generator.code = left.generator.code + right.generator.code
                     generator.add_expression(new_tmp, left.value, right.value, "+")
                     return ValueTuple(new_tmp, ExpressionType.FLOAT, False,
                                       generator, ExpressionType.FLOAT, None, True, [], [])
 
                 # &str + String
                 if left.expression_type == ExpressionType.STRING_PRIMITIVE \
-                        and right.expression_type == ExpressionType.STRING_CLASS:
-                    # TODO implement string heap reallocation
-                    pass
+                        and right.expression_type == ExpressionType.STRING_PRIMITIVE:  # TODO change right to STRING_CLASS
+                    generator.code = left.generator.code + right.generator.code
+
+                    # if string, need to buffer al heap to other location
+                    exit_label = generator.new_label()
+                    exit2_label = generator.new_label()
+
+                    pointer = generator.new_temp()
+                    first_char_heap_address = generator.new_temp()
+                    generator.add_expression(first_char_heap_address, "H", "", "")
+
+                    generator.add_expression(pointer, left.value, "", "")
+                    char = generator.new_temp()
+
+                    # #####################################
+                    bucle_label = generator.new_label()
+                    bucle2_label = generator.new_label()
+                    generator.add_label([bucle_label])
+
+                    generator.add_get_heap(char, pointer)
+                    generator.add_if(char, "-1", "==", exit_label)
+                    generator.add_set_heap("H", char)
+                    generator.add_next_heap()
+                    generator.add_expression(pointer, pointer, "1", "+")
+                    generator.add_goto(bucle_label)
+
+                    generator.add_label([exit_label])
+                    generator.add_expression(pointer, right.value, "", "")
+
+                    generator.add_label([bucle2_label])
+                    generator.add_get_heap(char, pointer)
+                    generator.add_if(char, "-1", "==", exit2_label)
+                    generator.add_set_heap("H", char)
+                    generator.add_next_heap()
+                    generator.add_expression(pointer, pointer, "1", "+")
+                    generator.add_goto(bucle2_label)
+
+                    generator.add_label([exit2_label])
+                    generator.add_set_heap("H", "-1")
+                    generator.add_next_heap()
+                    return ValueTuple(value=first_char_heap_address, expression_type=ExpressionType.STRING_CLASS,
+                                      is_mutable=False, generator=generator,
+                                      content_type=ExpressionType.STRING_CLASS,
+                                      capacity=None, is_tmp=True, true_label=[""], false_label=[""])
 
                 # String + &str
                 if left.expression_type == ExpressionType.STRING_CLASS \
@@ -243,7 +283,7 @@ class Arithmetic(Expression):
 
                     not_div_by_zero_label = generator.new_label()
                     generator.add_if(right.value, "0", "!=", not_div_by_zero_label)
-                    generator.add_print_message(f"ERROR SEMÁNTICO: Division por 0 "
+                    generator.add_print_message(f"ERROR SEMANTICO: Division por 0 "
                                                 f"en linea:{self.line} columna:{self.column}")
                     generator.add_error_return("1")
                     generator.add_label([not_div_by_zero_label])
@@ -258,7 +298,7 @@ class Arithmetic(Expression):
 
                     not_div_by_zero_label = generator.new_label()
                     generator.add_if(right.value, "0", "!=", not_div_by_zero_label)
-                    generator.add_print_message(f"ERROR SEMÁNTICO: Division por 0 "
+                    generator.add_print_message(f"ERROR SEMANTICO: Division por 0 "
                                                 f"en linea:{self.line} columna:{self.column}\n")
                     generator.add_error_return("1")
                     generator.add_label([not_div_by_zero_label])

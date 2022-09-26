@@ -18,7 +18,8 @@ from element_types.array_def_type import ArrayDefType
 class ArrayDeclaration(Instruction):
 
     # TODO add array_reference and var_reference to expression type,
-    def __init__(self, variable_id: str, array_type: Union[ArrayDefType, None], expression: Union[ArrayExpression, None], is_mutable: bool,
+    def __init__(self, variable_id: str, array_type: Union[ArrayDefType, None],
+                 expression: Union[ArrayExpression, None], is_mutable: bool,
                  line: int, column: int):
         self.variable_id = variable_id
         self.array_type = array_type
@@ -31,7 +32,7 @@ class ArrayDeclaration(Instruction):
 
     def execute(self, env: Environment) -> ExecReturn:
 
-        #Inferred array (possibly delegated from declaration)
+        # Inferred array (possibly delegated from declaration)
         the_symbol = None
         the_array_expr = None
         if self.array_type is None:
@@ -114,28 +115,30 @@ class ArrayDeclaration(Instruction):
                                                  self.line, self.column)
             the_array_expr = result.value
 
-        # Accepted
-
+        # ###################################################Accepted###################################################
         flat_array = global_config.flatten_array(the_array_expr)
 
         from generator import Generator
         generator = Generator()
         generator.add_comment(f"-------------------------------Array Declaration of {self.variable_id}"
                               f"-------------------------------")
-        t = generator.new_temp()
-        generator.add_expression(t, "P", the_symbol.stack_position, "+")
-        generator.add_set_stack(t, "H")
-        for expr in flat_array:
 
+        # First do all stuff in heap, then get those values/references and make array out of it
+        # Why not set values while making it? Because of pointers. String for example would make array heap location
+        # not continuous. This avoids that problem.
+        values = []
+        for expr in flat_array:
             r = expr.execute(env)
             generator.combine_with(r.generator)
-            generator.add_set_heap("H", str(r.value))
+            values.append(str(r.value))
+
+        t = generator.new_temp()
+        generator.add_expression(t, "P", the_symbol.heap_position, "+")
+        generator.add_set_stack(t, "H")
+
+        for val in values:
+            generator.add_set_heap("H", val)
             generator.add_next_heap()
 
         return ExecReturn(generator=generator,
                           propagate_method_return=False, propagate_continue=False, propagate_break=False)
-
-
-
-
-

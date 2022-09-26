@@ -1,3 +1,38 @@
+Declarations or assigments should be checked for expression of type VariableReference
+String sum should return other heap location with the combination of both
+
+Hide original string of string_literal in true_label for println usage. Too complicated to do with other :(
+
+
+
+
+
+
+Will I do this? idk xd
 Check for arrays passed to func calls
 Check for vectors passed to func calls
 Check for function return type
+
+
+
+
+
+
+
+0  ----First P [total size=5]
+5
+33
+22 , relative size=3
+11  
+
+3  ---Second p [total size= 3]
+4
+5 
+
+
+5 --Third p
+4
+
+
+
+

@@ -106,7 +106,7 @@ class ArrayAssignment(Instruction):
 
         generator.add_goto(exit_label)
         generator.add_label([error_label])
-        generator.add_print_message(f"ERROR SEMÁNTICO: Division por 0 "
+        generator.add_print_message(f"ERROR SEMANTICO: Size incorrecto de array "
                                     f"en linea:{self.line} columna:{self.column}")
         generator.add_error_return("2")
 
@@ -144,7 +144,7 @@ class ArrayAssignment(Instruction):
             generator.add_comment(f"-------------------------------Array Assignment of {self.variable_id}"
                                   f"-------------------------------")
             t = generator.new_temp()
-            generator.add_expression(t, "P", the_symbol.stack_position, "+")
+            generator.add_expression(t, "P", the_symbol.heap_position, "+")
             generator.add_set_stack(t, "H")
             for expr in flat_array:
                 r = expr.execute(env)
@@ -170,7 +170,7 @@ class ArrayAssignment(Instruction):
         generator.add_expression(p, p, dimensions[len(dimensions)-1], "+")
 
         stack_value = generator.new_temp()
-        generator.add_expression(stack_value, "P", the_symbol.stack_position, "+")
+        generator.add_expression(stack_value, "P", the_symbol.heap_position, "+")
 
         base_heap_address = generator.new_temp()
         generator.add_get_stack(base_heap_address, stack_value)

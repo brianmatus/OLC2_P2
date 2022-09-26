@@ -75,13 +75,13 @@ class Declaration(Instruction):
             exit_label = generator.new_label()
             generator.add_label(result.false_label)
             t = generator.new_temp()
-            generator.add_expression(t, "P", the_symbol.stack_position, "+")
+            generator.add_expression(t, "P", the_symbol.heap_position, "+")
             generator.add_set_stack(t, "0")
             generator.add_goto(exit_label)
 
             generator.add_label(result.true_label)
             t = generator.new_temp()
-            generator.add_expression(t, "P", the_symbol.stack_position, "+")
+            generator.add_expression(t, "P", the_symbol.heap_position, "+")
             generator.add_set_stack(t, "1")
             generator.add_label([exit_label])
 
@@ -101,15 +101,14 @@ class Declaration(Instruction):
 
             t = generator.new_temp()
             generator.add_comment("declaration::Set value")
-            generator.add_expression(t, "P", the_symbol.stack_position, "+")
+            generator.add_expression(t, "P", the_symbol.heap_position, "+")
             generator.add_set_stack(t, str(result.value))
             return ExecReturn(generator=generator,
                               propagate_method_return=False, propagate_continue=False, propagate_break=False)
 
         # Exceptions of same type:
         # char var_type with str expr_type
-        if self.expression_type == ExpressionType.CHAR and expr.expression_type == ExpressionType.STRING_PRIMITIVE:
-            result: ValueTuple = expr.execute(env)
+        if result.expression_type == ExpressionType.CHAR and expr.expression_type == ExpressionType.STRING_PRIMITIVE:
             the_symbol: Symbol = env.save_variable(self.variable_id, self.expression_type,
                                                    self.is_mutable, True, self.line, self.column)
 
@@ -120,28 +119,27 @@ class Declaration(Instruction):
             generator.combine_with(result.generator)
 
             t = generator.new_temp()
-            generator.add_expression(t, "P", the_symbol.stack_position, "+")
+            generator.add_expression(t, "P", the_symbol.heap_position, "+")
             generator.add_set_stack(t, str(result.value))
 
             return ExecReturn(generator=generator,
                               propagate_method_return=False, propagate_continue=False, propagate_break=False)
 
         # usize var_type with int expr_type
-        if self.expression_type == ExpressionType.USIZE and expr.expression_type == ExpressionType.INT:
+        if result.expression_type == ExpressionType.USIZE and expr.expression_type == ExpressionType.INT:
 
             if global_config.is_arithmetic_pure_literals(self.expression):
-                result: ValueTuple = expr.execute(env)
                 the_symbol: Symbol = env.save_variable(self.variable_id, self.expression_type,
                                                        self.is_mutable, True, self.line, self.column)
 
                 t = result.generator.new_temp()
-                result.generator.add_expression(t, "P", the_symbol.stack_position, "+")
+                result.generator.add_expression(t, "P", the_symbol.heap_position, "+")
                 result.generator.add_set_stack(t, str(result.value))
                 return ExecReturn(generator=result.generator,
                                   propagate_method_return=False, propagate_continue=False, propagate_break=False)
 
         # Error:
-        error_msg = f'Asignación de tipo {expr.expression_type.name} a variable <{self.variable_id}> ' \
+        error_msg = f'Asignación de tipo {result.expression_type.name} a variable <{self.variable_id}> ' \
                     f'de tipo {self.expression_type.name}'
         global_config.log_semantic_error(error_msg, self.line, self.column)
         raise SemanticError(error_msg, self.line, self.column)

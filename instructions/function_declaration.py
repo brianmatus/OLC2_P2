@@ -39,6 +39,9 @@ class FunctionDeclaration(Instruction):
         # Constructor wasn't working correctly, just in case
         self.environment.parent_environment = global_config.main_environment
 
+        # FIXME does this work? idk, try it first before deleting
+        # global_config.main_environment.size = self.environment.size
+
     def execute(self, env: Environment) -> ExecReturn:
         self.environment = Environment(env)
 
@@ -68,20 +71,22 @@ class FunctionDeclaration(Instruction):
         final_generator.add_expression("P", "P", env.size, "+")
 
         exit_label = final_generator.new_label()
-        self.environment.queue_transfer(TransferType.RETURN, exit_label)
+        from elements.c_env import TransferInstruction
+        self.environment.transfer_control = TransferInstruction(TransferType.RETURN, exit_label)
         final_generator.add_comment(f"-----{self.function_id} Instructions-----")
         for instruction in self.instructions:
             a = instruction.execute(self.environment)
             final_generator.combine_with(a.generator)
 
         final_generator.add_comment(f"-----End of {self.function_id} Instructions-----")
-        final_generator.add_comment(f"-----No return? set void-----")
-        already_returned = final_generator.new_label()
-        final_generator.add_if("t2", "1", "==", already_returned)
-        # final_generator.add_expression("t0", "-4242", "", "")
-        final_generator.add_label([already_returned])
-        final_generator.add_expression("t2", "0", "", "")
+        # final_generator.add_comment(f"-----No return? set void-----")
+        # already_returned = final_generator.new_label()
+        # final_generator.add_if("t2", "1", "==", already_returned)
+        # # final_generator.add_expression("t0", "-4242", "", "")
+        # final_generator.add_label([already_returned])
+        # final_generator.add_expression("t2", "0", "", "")
 
+        final_generator.add_comment("Return label of func:")
         final_generator.add_label([exit_label])
         final_generator.add_comment("-----Revert P back-----")
         final_generator.add_expression("P", "P", env.size, "-")

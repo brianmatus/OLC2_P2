@@ -27,21 +27,21 @@ class Assigment(Instruction):
         if self.expression.expression_type == ExpressionType.BOOL:
 
             exit_label = generator.new_label()
-            generator.add_label(result.false_label)
-
             t = generator.new_temp()
-            generator.add_expression(t, "P", the_symbol.stack_position, "+")
+            generator.add_expression(t, "P", the_symbol.heap_position, "+")
+
+            generator.add_label(result.false_label)
             generator.add_set_stack(t, "0")
             generator.add_goto(exit_label)
+
             generator.add_label(result.true_label)
-            t = generator.new_temp()
-            generator.add_expression(t, "P", the_symbol.stack_position, "+")
             generator.add_set_stack(t, "1")
+
             generator.add_label([exit_label])
 
             return ExecReturn(generator=generator,
                               propagate_method_return=False, propagate_continue=False, propagate_break=False)
 
-        generator.add_set_stack(str(the_symbol.stack_position), str(result.value))
+        generator.add_set_stack(str(the_symbol.heap_position), str(result.value))
         return ExecReturn(generator=generator,
                           propagate_method_return=False, propagate_continue=False, propagate_break=False)

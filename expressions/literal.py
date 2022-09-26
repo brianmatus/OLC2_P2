@@ -20,7 +20,7 @@ class Literal(Expression):
                               content_type=self.expression_type, capacity=None, is_tmp=False, generator=Generator(),
                               true_label=[], false_label=[])
 
-        if self.expression_type == ExpressionType.STRING_PRIMITIVE:
+        if self.expression_type in [ExpressionType.STRING_PRIMITIVE, ExpressionType.STRING_CLASS]:
             generator = Generator()
             generator.add_comment(f"-----String: {self.value}-----")
             t = generator.new_temp()
@@ -35,7 +35,7 @@ class Literal(Expression):
 
             return ValueTuple(value=t, expression_type=self.expression_type, is_mutable=False,
                               content_type=self.expression_type, capacity=None, is_tmp=True, generator=generator,
-                              true_label=[], false_label=[])
+                              true_label=[self.value], false_label=[])
 
         if self.expression_type == ExpressionType.BOOL:
             generator = Generator()

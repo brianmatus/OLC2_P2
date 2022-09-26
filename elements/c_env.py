@@ -18,9 +18,9 @@ from enum import Enum
 
 
 class Symbol:
-    def __init__(self, symbol_id: str, expression_type: ExpressionType, stack_position,
+    def __init__(self, symbol_id: str, expression_type: ExpressionType, heap_position,
                  is_init: bool, is_mutable: bool):
-        self.stack_position = stack_position
+        self.heap_position = heap_position
         self.symbol_id = symbol_id
         self.symbol_type = expression_type
         self.is_init = is_init
@@ -28,9 +28,9 @@ class Symbol:
 
 
 class ArraySymbol:
-    def __init__(self, symbol_id: str, symbol_type: ExpressionType, dimensions: dict, stack_position,
+    def __init__(self, symbol_id: str, symbol_type: ExpressionType, dimensions: dict, heap_position,
                  is_init: bool, is_mutable: bool):
-        self.stack_position = stack_position
+        self.heap_position = heap_position
         self.symbol_id = symbol_id
         self.symbol_type = symbol_type
         self.is_init = is_init
@@ -39,10 +39,10 @@ class ArraySymbol:
 
 
 class VectorSymbol:
-    def __init__(self, vector_id: str, vector_type: ExpressionType, deepness: int, value,
+    def __init__(self, symbol_id: str, vector_type: ExpressionType, deepness: int, heap_position,
                  is_mutable: bool, capacity: List[int]):
-        self.value = value
-        self.vector_id: str = vector_id
+        self.heap_position = heap_position
+        self.symbol_id: str = symbol_id
         self.symbol_type: ExpressionType = vector_type
         self.is_mutable: bool = is_mutable
         self.deepness: int = deepness
@@ -55,6 +55,7 @@ TransferType = Enum('ElementType',
                         'BREAK',
                         'CONTINUE',
                         'RETURN',
+                        'DEFAULT_INVALID'
                     ]))
 
 
@@ -71,7 +72,7 @@ class Environment:
         self.symbol_table: dict = {}
         self.size = 0
         self.children_environment = []
-        self.transfer_queue: List[TransferInstruction] = []
+        self.transfer_control: TransferInstruction = TransferInstruction(TransferType.DEFAULT_INVALID, "invalid_jump")
 
         if self.parent_environment is not None:
             pass
@@ -87,7 +88,7 @@ class Environment:
             raise SemanticError(error_msg, line, column)
 
         the_symbol = Symbol(symbol_id=variable_id, expression_type=expression_type,
-                            stack_position=self.size, is_init=is_init, is_mutable=is_mutable)
+                            heap_position=self.size, is_init=is_init, is_mutable=is_mutable)
 
         self.symbol_table[variable_id] = the_symbol
 
@@ -126,11 +127,11 @@ class Environment:
         return self.parent_environment.get_variable(_id)
 
     def get_variable_p_deepness(self, _id: str, r) -> int:
-        t = self.symbol_table.get(_id)
+        t:ArraySymbol = self.symbol_table.get(_id)
         if t is not None:
             if r == 0:
-                return 0-t.stack_position
-            return r - t.stack_position
+                return 0-t.heap_position
+            return r - t.heap_position
 
         # hit top
         if self.parent_environment is None:
@@ -186,9 +187,6 @@ class Environment:
         the_symbol.is_init = True
 
         return the_symbol
-
-    def queue_transfer(self, transfer_type, label_to_jump):
-        self.transfer_queue.append(TransferInstruction(transfer_type, label_to_jump))
 
     def remove_child(self, child):  # child: Environment
         self.children_environment = list(filter(lambda p: p is not child, self.children_environment))
