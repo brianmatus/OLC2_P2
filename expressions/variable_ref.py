@@ -2,7 +2,6 @@ from abstract.expression import Expression
 from elements.c_env import Environment
 from elements.value_tuple import ValueTuple
 from element_types.c_expression_type import ExpressionType
-from returns.ast_return import ASTReturn
 
 from errors.semantic_error import SemanticError
 
@@ -34,7 +33,6 @@ class VariableReference(Expression):
                               is_mutable=vector_symbol.is_mutable, generator=Generator(),
                               content_type=vector_symbol.symbol_type, capacity=vector_symbol.capacity, is_tmp=True,
                               true_label=[""], false_label=[""])
-        #TODO check, this may need stack referencing in a tmp and then assigning that, idk
 
         if isinstance(the_symbol, ArraySymbol):
             array_symbol: ArraySymbol = the_symbol
@@ -100,4 +98,3 @@ class VariableReference(Expression):
         return ValueTuple(value=first_char_heap_address, expression_type=the_symbol.symbol_type,
                           is_mutable=the_symbol.is_mutable, generator=generator, content_type=the_symbol.symbol_type,
                           capacity=None, is_tmp=True, true_label=[""], false_label=[""])
-

@@ -9,17 +9,19 @@ from returns.exec_return import ExecReturn
 from abstract.instruction import Instruction
 from expressions.array_expression import ArrayExpression
 from element_types.c_expression_type import ExpressionType
+from expressions.variable_ref import VariableReference
+# from expressions.array_reference import ArrayReference
 
 from elements.c_env import Environment
-
 from element_types.array_def_type import ArrayDefType
+from generator import Generator
 
 
 class ArrayDeclaration(Instruction):
 
     # TODO add array_reference and var_reference to expression type,
     def __init__(self, variable_id: str, array_type: Union[ArrayDefType, None],
-                 expression: Union[ArrayExpression, None], is_mutable: bool,
+                 expression: Union[ArrayExpression, VariableReference, None], is_mutable: bool,  # ArrayReference too
                  line: int, column: int):
         self.variable_id = variable_id
         self.array_type = array_type
@@ -31,6 +33,64 @@ class ArrayDeclaration(Instruction):
         self.var_type = None
 
     def execute(self, env: Environment) -> ExecReturn:
+
+        # Variable ref from another array (total array, partial may be not allowed)
+        if isinstance(self.expression, VariableReference):
+            result = self.expression.execute(env)
+
+            if self.array_type is not None:
+                # Find out what dimension should I be
+                level = 1
+                sizes = {}
+                arr_def_type = self.array_type
+                while True:
+
+                    the_size = arr_def_type.size_expr.execute(env)
+                    if the_size.expression_type is not ExpressionType.INT:
+                        error_msg = f'Tamaño de array debe ser una expresion entera'
+                        global_config.log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                    sizes[level] = int(the_size.value)
+
+                    if not arr_def_type.is_nested_array:
+                        # print(f'Inner most type:{arr_def_type.content_type}')
+                        self.var_type = arr_def_type.content_type
+                        break
+
+                    arr_def_type = arr_def_type.content_type
+                    level += 1
+
+                if result.content_type != arr_def_type.content_type:
+                    error_msg = f'Uno o mas elementos del array no concuerdan en tipo con su definición'
+                    global_config.log_semantic_error(error_msg, self.line, self.column)
+                    raise SemanticError(error_msg, self.line, self.column)
+
+                # print(f'Dimension match:{r}')
+                if len(sizes.keys()) != len(result.capacity):
+                    error_msg = f'El tamaño del array no es el adecuado'
+                    global_config.log_semantic_error(error_msg, self.line, self.column)
+                    raise SemanticError(error_msg, self.line, self.column)
+
+            generator = Generator()
+            generator.add_comment(f"-------------------------------Array Declaration of {self.variable_id} as reference"
+                                  f"-------------------------------")
+
+            generator.combine_with(result.generator)
+
+            generator.add_comment("Array declaration by reference just copy the reference, no code actually generated")
+
+            d = {}
+            for i in range(1, len(result.capacity)+1):
+                d[i] = result.capacity[i-1]
+
+            # the_symbol = ...
+            env.save_variable_array(variable_id=self.variable_id, content_type=result.content_type,
+                                    dimensions=d, is_mutable=self.is_mutable,
+                                    is_init=True, line=self.line, column=self.column)
+
+            return ExecReturn(generator=generator,
+                              propagate_method_return=False, propagate_continue=False, propagate_break=False)
 
         # Inferred array (possibly delegated from declaration)
         the_symbol = None
@@ -118,7 +178,6 @@ class ArrayDeclaration(Instruction):
         # ###################################################Accepted###################################################
         flat_array = global_config.flatten_array(the_array_expr)
 
-        from generator import Generator
         generator = Generator()
         generator.add_comment(f"-------------------------------Array Declaration of {self.variable_id}"
                               f"-------------------------------")
