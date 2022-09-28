@@ -88,6 +88,14 @@ class Declaration(Instruction):
             return ExecReturn(generator=generator,
                               propagate_method_return=False, propagate_continue=False, propagate_break=False)
 
+
+
+
+        # Variable ref to array should be copied
+        if result.expression_type == self.expression_type and result.expression_type == ExpressionType.ARRAY:
+            pass
+
+
         # Check same type
         if result.expression_type == self.expression_type:
             the_symbol: Symbol = env.save_variable(self.variable_id, self.expression_type,

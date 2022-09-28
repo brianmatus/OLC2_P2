@@ -1,13 +1,21 @@
+fn ola(x : i64) {
+    let mut offset1 = 33;
+    let mut offset2 = 44;
+
+    println!("recibido:{}",x);
+
+}
+
+
 fn main () {
-    //let mut txt:[&str;3] = ["abc", "def", "ghi"];
+    let x = 11;
+    ola(420);
+    let y = 22;
+    ola(421);
 
-    //txt[0] = "xdd";
-
-    //let mut x = 1+2*2;
-    //println!("x:{}",x);
-    let mut a = [[[1,2,3],[4,5,6]]];
-   // let mut a = [1,2,3,4,5,6];
-    println!("a:{:?}",a);
+    println!("Prueba de datos corrompidos");
+    println!("x:{}",x);
+    println!("y:{}",y);
 
 
 }

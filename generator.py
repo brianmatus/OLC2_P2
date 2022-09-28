@@ -3,16 +3,20 @@ from typing import List
 
 debug_prints = True
 add_comments = True
+HEAP_SIZE = 100
+HEAP_COUNTER = 0
+STACK_SIZE = 50
+STACK_COUNTER = 0
 
 
 class Generator:
+    heap = 5
+
 
     def __init__(self) -> None:
         # self.generator = None
         self.code: list = []
         self.tempList: list = []
-        self.HEAP_SIZE = 100
-        self.STACK_SIZE = 50
 
     def get_used_temps(self) -> str:
         return ",".join([f"t{i}" for i in range(global_config.tmp_i)])
@@ -89,8 +93,8 @@ class Generator:
     def add_headers_on_top(self):
         self.code = [f'#include <stdio.h>\n'
                      f'#include <math.h>\n'
-                     f'double HEAP[{self.HEAP_SIZE}];\n'
-                     f'double STACK[{self.STACK_SIZE}];\n'
+                     f'double HEAP[{HEAP_SIZE}];\n'
+                     f'double STACK[{STACK_SIZE}];\n'
                      f'double P;\n'
                      f'double H;\n\n'
                      f'{self.get_code()}']
@@ -136,7 +140,16 @@ class Generator:
 
     # H = H + 1
     def add_next_heap(self):
+        global HEAP_COUNTER
+
+        if HEAP_COUNTER >= HEAP_SIZE:
+            error_msg = f'GENERATOR::HEAP OVERFLOW'
+            global_config.log_semantic_error(error_msg, -42, -42)
+            from errors.semantic_error import SemanticError
+            raise SemanticError(error_msg, -42, -42)
+
         self.code.append("H = H + 1;")
+        HEAP_COUNTER += 1
 
     # P = P + i
     def add_next_stack(self, index: str):
@@ -170,4 +183,3 @@ class Generator:
     def add_comment(self, msg):
         if add_comments:
             self.code.append(f"//{msg}")
-

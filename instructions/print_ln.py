@@ -4,16 +4,12 @@ from typing import List
 from errors.semantic_error import SemanticError
 import global_config
 from abstract.instruction import Instruction
-from returns.ast_return import ASTReturn
 from returns.exec_return import ExecReturn
 from element_types.c_expression_type import ExpressionType
 from elements.c_env import Environment
 from abstract.expression import Expression
-from expressions.literal import Literal
 from elements.value_tuple import ValueTuple
 from generator import Generator
-
-
 
 
 class PrintLN(Instruction):
@@ -45,6 +41,9 @@ class PrintLN(Instruction):
         # the_str.replace("\\n", "\n")
         generator = Generator()
         generator.add_comment(f"<<<-------------------------------PRINTLN------------------------------->>>")
+
+        if len(self.expr_list[1:]) == 0:
+            generator.add_print_message(the_str)
 
         for arg in self.expr_list[1:]:
             the_arg = arg.execute(env)
@@ -117,10 +116,10 @@ class PrintLN(Instruction):
             the_str = the_str[ind + 2:]
             # ############################################ For Strings #################################################
             if the_arg.expression_type in [ExpressionType.STRING_PRIMITIVE, ExpressionType.STRING_CLASS]:
-                generate_string_print(generator, the_arg.value)
+                generate_normal_string_print(generator, the_arg.value)
                 continue
             # ############################################# Primitives #################################################
-            generate_primitive_print(the_arg, generator, the_arg.value)
+            generate_normal_primitive_print(the_arg, generator, the_arg.value)
             continue
 
         if self.has_ln:
@@ -133,9 +132,9 @@ class PrintLN(Instruction):
 def traverse_loop_for_print(generator: Generator, the_arg: ValueTuple, ptr: str, t_max: str,
                             is_first: bool) -> Generator:
 
-    generator.add_comment("-------------------------------------TRAVERSE OF ARRAY-------------------------------------")
-
     if is_first:
+        generator.add_comment(
+            "-------------------------------------TRAVERSE OF ARRAY-------------------------------------")
         t_element = generator.new_temp()
         t_counter = generator.new_temp()
         t_mod = generator.new_temp()
@@ -148,9 +147,9 @@ def traverse_loop_for_print(generator: Generator, the_arg: ValueTuple, ptr: str,
         generator.add_get_heap(t_element, ptr)
 
         if the_arg.content_type in [ExpressionType.STRING_PRIMITIVE, ExpressionType.STRING_CLASS]:
-            generate_string_print(generator, ptr)
+            generate_array_string_print(generator, ptr)
         else:
-            generate_primitive_print(the_arg, generator, ptr)
+            generate_array_primitive_print(the_arg, generator, ptr)
 
         generator.add_comment("ptr = ptr + 1")
         generator.add_expression(ptr, ptr, "1", "+")
@@ -170,9 +169,9 @@ def traverse_loop_for_print(generator: Generator, the_arg: ValueTuple, ptr: str,
         generator.add_comment("print(element)")
 
         if the_arg.content_type in [ExpressionType.STRING_PRIMITIVE, ExpressionType.STRING_CLASS]:
-            generate_string_print(generator, ptr)
+            generate_array_string_print(generator, ptr)
         else:
-            generate_primitive_print(the_arg, generator, ptr)
+            generate_array_primitive_print(the_arg, generator, ptr)
 
         generator.add_comment("ptr = ptr + 1")
         generator.add_expression(ptr, ptr, "1", "+")
@@ -187,10 +186,8 @@ def traverse_loop_for_print(generator: Generator, the_arg: ValueTuple, ptr: str,
         generator.add_comment("------------------------------------END TRAVERSE OF ARRAY------------------------------")
         return generator
 
+    # ##################################################################################################################
     # Not first? wrap
-
-
-
     to_wrap = Generator()
     to_wrap.combine_with(generator)
     generator = Generator()
@@ -215,7 +212,6 @@ def traverse_loop_for_print(generator: Generator, the_arg: ValueTuple, ptr: str,
 
     generator.combine_with(to_wrap)
 
-
     generator.add_expression(t_counter, t_counter, "1", "+")
     generator.add_goto(l_loop)
     generator.add_label([l_exit])
@@ -224,7 +220,27 @@ def traverse_loop_for_print(generator: Generator, the_arg: ValueTuple, ptr: str,
     return generator
 
 
-def generate_primitive_print(the_arg: ValueTuple, generator: Generator, ptr: str):
+def generate_normal_primitive_print(the_arg: ValueTuple, generator: Generator, ptr: str):
+    char = generator.new_temp()
+    generator.add_comment("--------------------------------print:normal primitive printing----------------------------")
+    generator.add_expression(char, ptr, "", "")
+    match the_arg.content_type:
+        case ExpressionType.CHAR:
+            generator.add_printf("c", f"(int){char}")
+        case ExpressionType.INT:
+            generator.add_printf("i", f"(int){char}")
+        case ExpressionType.FLOAT:
+            generator.add_printf("f", char)
+        # TODO Add boolean print
+        case _:
+            error_msg = f'generate_primitive_print::expression type not detected, is this possible?'
+            global_config.log_semantic_error(error_msg, -1, -1)
+            raise SemanticError(error_msg, -1, -1)
+
+    generator.add_comment("-------------------------------print:END normal primitive printing-------------------------")
+
+
+def generate_array_primitive_print(the_arg: ValueTuple, generator: Generator, ptr: str):
     pointer = generator.new_temp()
     generator.add_comment("--------------------------------print:primitive printing--------------------------------")
     generator.add_expression(pointer, ptr, "", "")
@@ -245,7 +261,29 @@ def generate_primitive_print(the_arg: ValueTuple, generator: Generator, ptr: str
     generator.add_comment("-------------------------------print:END primitive printing--------------------------------")
 
 
-def generate_string_print(generator: Generator, ptr: str):
+def generate_normal_string_print(generator: Generator, ptr: str):
+    exit_label = generator.new_label()
+
+    real_ptr = generator.new_temp()
+    generator.add_comment("--------------------------------print:string printing--------------------------------")
+    generator.add_expression(real_ptr, ptr, "", "")
+    bucle_label = generator.new_label()
+    generator.add_print_message("\"")
+    generator.add_label([bucle_label])
+    char = generator.new_temp()
+    generator.add_get_heap(char, real_ptr)
+
+    generator.add_if(char, "-1", "==", exit_label)
+
+    generator.add_printf("c", f"(int){char}")
+    generator.add_expression(real_ptr, real_ptr, "1", "+")
+    generator.add_goto(bucle_label)
+    generator.add_label([exit_label])
+    generator.add_print_message("\"")
+    generator.add_comment("-------------------------------print:END string printing--------------------------------")
+
+
+def generate_array_string_print(generator: Generator, ptr: str):
     exit_label = generator.new_label()
 
     pointer = generator.new_temp()

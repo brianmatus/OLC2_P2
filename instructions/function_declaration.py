@@ -59,6 +59,7 @@ class FunctionDeclaration(Instruction):
         final_generator.add_comment(f"<<<-------------------------------Function Declaration of {self.function_id}"
                                     f"------------------------------->>>")
 
+
         # dont_execute_me = final_generator.new_label()
         # final_generator.add_goto(dont_execute_me)
 
@@ -66,9 +67,13 @@ class FunctionDeclaration(Instruction):
 
         final_generator.add_label([self.start_label])
 
-        final_generator.add_comment("-----Update P for a new environment-----")
+        return_position = final_generator.new_temp()
+        final_generator.add_expression(return_position, "t1", "", "")
 
-        final_generator.add_expression("P", "P", env.size, "+")
+        # TODO update should be called from func call
+        # final_generator.add_comment("-----Update P for a new environment-----")
+        #
+        # final_generator.add_expression("P", "P", env.size, "+")
 
         exit_label = final_generator.new_label()
         from elements.c_env import TransferInstruction
@@ -88,16 +93,18 @@ class FunctionDeclaration(Instruction):
 
         final_generator.add_comment("Return label of func:")
         final_generator.add_label([exit_label])
-        final_generator.add_comment("-----Revert P back-----")
-        final_generator.add_expression("P", "P", env.size, "-")
+        # final_generator.add_comment("-----Revert P back-----")
+        # final_generator.add_expression("P", "P", env.size, "-")
 
         final_generator.add_comment("-----Where was i called from? return there-----")
         final_generator.add_comment("   -----return value will be set to t0 by return_inst-----")
-        final_generator.add_comment("-----where to return will be set to t1 by func_call_inst-----")
+        final_generator.add_comment(f"-----where to return will be set to t1-----")
+        final_generator.add_comment(f"-----t1 is then catch by {return_position}-----")
 
         if self.function_id in global_config.function_call_list.keys():
             for i in range(len(global_config.function_call_list[self.function_id])):
-                final_generator.add_if("t1", str(i), "==", global_config.function_call_list[self.function_id][i])
+                final_generator.add_if(return_position, str(i),
+                                       "==", global_config.function_call_list[self.function_id][i])
         else:
             print(f"Function {self.function_id} was never called")
             final_generator.add_comment(f"Function {self.function_id} was never called")

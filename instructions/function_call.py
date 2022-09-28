@@ -51,12 +51,15 @@ class FunctionCallI(Instruction):
             log_semantic_error(error_msg, self.line, self.column)
             raise SemanticError(error_msg, self.line, self.column)
 
-        intermediate_env = Environment(main_environment)
-        intermediate_env.parent_environment = main_environment
+        # intermediate_env = Environment(main_environment)
+        # intermediate_env.parent_environment = main_environment
 
         final_generator = Generator()
         final_generator.add_comment(f"-------------------------------Function Call of {self.function_id}"
                                     f"-------------------------------")
+
+        final_generator.add_comment("-----Update P for a new environment-----")
+        final_generator.add_expression("P", "P", env.size, "+")
 
         for i in range(len(self.params)):
 
@@ -95,9 +98,12 @@ class FunctionCallI(Instruction):
 
         final_generator.add_comment(f"-----Where should the func return once completed? To {self.comeback_label}-----")
         final_generator.add_expression("t1", str(self.turn), "", "")
+
         final_generator.add_goto(func.start_label)
 
         final_generator.add_label([self.comeback_label])
+        final_generator.add_comment("-----Revert P for a previous environment-----")
+        final_generator.add_expression("P", "P", env.size, "-")
         return ExecReturn(final_generator, False, False, False)
 
 
