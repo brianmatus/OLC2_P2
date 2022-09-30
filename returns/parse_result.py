@@ -16,4 +16,3 @@ class ParseResult:
         self.symbol_table = symbol_table
         self.console_output = console_output
         self.ast_tree = ast_tree
-

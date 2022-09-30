@@ -135,8 +135,14 @@ class Arithmetic(Expression):
                                       generator, ExpressionType.FLOAT, None, True, [], [])
 
                 # &str + String
-                if left.expression_type == ExpressionType.STRING_PRIMITIVE \
-                        and right.expression_type == ExpressionType.STRING_PRIMITIVE:  # TODO change right to STRING_CLASS
+                # TODO change right to STRING_CLASS
+                a = left.expression_type == ExpressionType.STRING_PRIMITIVE \
+                    and right.expression_type == ExpressionType.STRING_PRIMITIVE
+                # String + &str
+                b = left.expression_type == ExpressionType.STRING_CLASS \
+                    and right.expression_type == ExpressionType.STRING_PRIMITIVE
+
+                if a or b:
                     generator.code = left.generator.code + right.generator.code
 
                     # if string, need to buffer al heap to other location
@@ -180,12 +186,6 @@ class Arithmetic(Expression):
                                       is_mutable=False, generator=generator,
                                       content_type=ExpressionType.STRING_CLASS,
                                       capacity=None, is_tmp=True, true_label=[""], false_label=[""])
-
-                # String + &str
-                if left.expression_type == ExpressionType.STRING_CLASS \
-                        and right.expression_type == ExpressionType.STRING_PRIMITIVE:
-                    # TODO implement string heap reallocation
-                    pass
 
                 error_msg = f"Operación Aritmética SUMA " \
                             f"{left.expression_type.name} <-> {right.expression_type.name} es invalida."
@@ -283,7 +283,7 @@ class Arithmetic(Expression):
 
                     not_div_by_zero_label = generator.new_label()
                     generator.add_if(right.value, "0", "!=", not_div_by_zero_label)
-                    generator.add_print_message(f"ERROR SEMANTICO: Division por 0 "
+                    generator.add_print_message(f"ERROR SEMANTIC: Division por 0 "
                                                 f"en linea:{self.line} columna:{self.column}")
                     generator.add_error_return("1")
                     generator.add_label([not_div_by_zero_label])
@@ -298,7 +298,7 @@ class Arithmetic(Expression):
 
                     not_div_by_zero_label = generator.new_label()
                     generator.add_if(right.value, "0", "!=", not_div_by_zero_label)
-                    generator.add_print_message(f"ERROR SEMANTICO: Division por 0 "
+                    generator.add_print_message(f"ERROR SEMANTIC: Division por 0 "
                                                 f"en linea:{self.line} columna:{self.column}\n")
                     generator.add_error_return("1")
                     generator.add_label([not_div_by_zero_label])

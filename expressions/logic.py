@@ -3,7 +3,6 @@ from abstract.expression import Expression
 from elements.c_env import Environment
 from elements.value_tuple import ValueTuple
 from element_types.c_expression_type import ExpressionType
-from returns.ast_return import ASTReturn
 from generator import Generator
 
 from element_types.logic_type import LogicType
@@ -33,11 +32,14 @@ class Logic(Expression):
 
         a = left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.INT
         a2 = left.expression_type == ExpressionType.USIZE and right.expression_type == ExpressionType.USIZE
-        a3 = left.expression_type in [ExpressionType.INT, ExpressionType.USIZE] and right.expression_type in [ExpressionType.INT, ExpressionType.USIZE]
+        a3 = left.expression_type in [ExpressionType.INT, ExpressionType.USIZE] and \
+            right.expression_type in [ExpressionType.INT, ExpressionType.USIZE]
         b = left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT
-        c = left.expression_type == ExpressionType.STRING_PRIMITIVE and right.expression_type == ExpressionType.STRING_PRIMITIVE
+        c = left.expression_type == ExpressionType.STRING_PRIMITIVE \
+            and right.expression_type == ExpressionType.STRING_PRIMITIVE
         d = left.expression_type == ExpressionType.BOOL and right.expression_type == ExpressionType.BOOL
-        e = self.logic_type == LogicType.LOGIC_OR or self.logic_type == LogicType.LOGIC_AND or self.logic_type == LogicType.LOGIC_NOT
+        e = self.logic_type == LogicType.LOGIC_OR or self.logic_type == LogicType.LOGIC_AND \
+            or self.logic_type == LogicType.LOGIC_NOT
 
         # Check int-float-string for relational, and only bool for logical
         if not (a or a2 or a3 or b or c or (d and e)):
@@ -113,7 +115,6 @@ class Logic(Expression):
                 return ValueTuple(None, ExpressionType.BOOL, False, generator, ExpressionType.BOOL, None, False,
                                   [true_label], [false_label])
 
-
             ###########################################################
             case LogicType.LOGIC_OR:
                 generator = Generator()
@@ -139,5 +140,5 @@ class Logic(Expression):
                 print("ERROR??? Unknown logic type?")
 
         print("POTENTIAL ERROR? UNEXPECTED Logic Execution")
-        return ValueTuple(999999999999, ExpressionType.INT, is_mutable=False, content_type=None, capacity=None
-                          ,generator=None, is_tmp=True)
+        return ValueTuple(999999999999, ExpressionType.INT, is_mutable=False, content_type=None, capacity=None,
+                          generator=None, is_tmp=True, true_label=["logic_error_f"], false_label=["logic_error_t"])

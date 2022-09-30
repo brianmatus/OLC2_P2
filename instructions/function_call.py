@@ -1,17 +1,15 @@
-from typing import List, Union
+from typing import List
 
 import global_config
 from elements.c_env import Environment
-from elements.value_tuple import ValueTuple
 from element_types.func_call_arg import FuncCallArg
 from element_types.c_expression_type import ExpressionType
 
-from abstract.expression import Expression
 from abstract.instruction import Instruction
 from returns.exec_return import ExecReturn
 from errors.semantic_error import SemanticError
 
-from global_config import function_list, log_semantic_error, main_environment
+from global_config import function_list, log_semantic_error
 from instructions.function_declaration import FunctionDeclaration
 from generator import Generator
 
@@ -105,8 +103,3 @@ class FunctionCallI(Instruction):
         final_generator.add_comment("-----Revert P for a previous environment-----")
         final_generator.add_expression("P", "P", env.size, "-")
         return ExecReturn(final_generator, False, False, False)
-
-
-
-
-

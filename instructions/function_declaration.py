@@ -23,7 +23,7 @@ class FunctionDeclaration(Instruction):
         self.instructions: List[Instruction] = instructions
         self.environment: Union[Environment, None] = None
 
-        self.start_label = "func_declr_start_label_not_set"
+        self.start_label = "func_declaration_start_label_not_set"
 
         if function_list.get(self.function_id) is not None:
             error_msg = f"La función {self.function_id} ya esta definida. " \
@@ -58,7 +58,6 @@ class FunctionDeclaration(Instruction):
         final_generator: Generator = Generator()
         final_generator.add_comment(f"<<<-------------------------------Function Declaration of {self.function_id}"
                                     f"------------------------------->>>")
-
 
         # dont_execute_me = final_generator.new_label()
         # final_generator.add_goto(dont_execute_me)

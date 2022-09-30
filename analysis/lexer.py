@@ -75,14 +75,15 @@ tokens = [
 
 t_ignore = '\t '
 
+
 def t_COMMENT(t):
     r"""//[^\n]*\n"""
     pass
 
+
 def t_MULTICOMMENT(t):
     r"""/\*[\s\S]*?\*/"""
     pass
-
 
 
 t_SUM = r'\+'
@@ -185,12 +186,3 @@ def find_column(token):
 
 
 lexer = lex.lex()
-
-
-
-
-
-
-
-
-

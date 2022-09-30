@@ -49,7 +49,7 @@ class ArrayDeclaration(Instruction):
 
                     the_size = arr_def_type.size_expr.execute(env)
                     if the_size.expression_type is not ExpressionType.INT:
-                        error_msg = f'Tamaño de array debe ser una expresion entera'
+                        error_msg = f'Tamaño de array debe ser una expresión entera'
                         global_config.log_semantic_error(error_msg, self.line, self.column)
                         raise SemanticError(error_msg, self.line, self.column)
 
@@ -130,7 +130,7 @@ class ArrayDeclaration(Instruction):
 
                 the_size = arr_def_type.size_expr.execute(env)
                 if the_size.expression_type is not ExpressionType.INT:
-                    error_msg = f'Tamaño de array debe ser una expresion entera'
+                    error_msg = f'Tamaño de array debe ser una expresión entera'
                     global_config.log_semantic_error(error_msg, self.line, self.column)
                     raise SemanticError(error_msg, self.line, self.column)
 

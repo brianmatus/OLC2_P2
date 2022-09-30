@@ -21,7 +21,9 @@ class Assigment(Instruction):
                               f"-------------------------------")
         result = self.expression.execute(env)
         generator.combine_with(result.generator)
-        the_symbol = env.set_variable(self.variable_id, result, self.line, self.column)
+
+        # the symbol = ...
+        env.set_variable(self.variable_id, result, self.line, self.column)
 
         # Accepted
         if self.expression.expression_type == ExpressionType.BOOL:
@@ -30,7 +32,6 @@ class Assigment(Instruction):
             ref_position = generator.new_temp()
 
             p_deepness = env.get_variable_p_deepness(self.variable_id, 0)
-            ref_position = generator.new_temp()
             generator.add_expression(ref_position, "P", str(0 - p_deepness), "+")
 
             generator.add_label(result.false_label)

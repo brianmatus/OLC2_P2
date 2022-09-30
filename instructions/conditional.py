@@ -75,4 +75,4 @@ class Conditional(Instruction):
         final_generator.add_expression("P", "P", env.size, "-")
 
         return ExecReturn(generator=final_generator,
-                          propagate_method_return=False, propagate_break=False,propagate_continue=False)
+                          propagate_method_return=False, propagate_break=False, propagate_continue=False)

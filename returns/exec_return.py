@@ -1,4 +1,3 @@
-from element_types.c_expression_type import ExpressionType
 from generator import Generator
 
 

@@ -25,7 +25,7 @@ class ArrayReference(Expression):
         the_symbol: ArraySymbol = environment.get_variable(self.variable_id)
 
         if the_symbol is None:
-            error_msg = f'Variable {self.variable_id} no esta definida en el ambito actual'
+            error_msg = f'Variable {self.variable_id} no esta definida en el ámbito actual'
             log_semantic_error(error_msg, self.line, self.column)
             raise SemanticError(error_msg, self.line, self.column)
 
@@ -69,20 +69,20 @@ class ArrayReference(Expression):
 
             generator.add_goto(exit_label)
             generator.add_label([error_label])
-            generator.add_print_message(f"ERROR SEMANTICO: Size incorrecto de array "
+            generator.add_print_message(f"ERROR SEMANTIC: Size incorrecto de array "
                                         f"en linea:{self.line} columna:{self.column}")
             generator.add_error_return("2")
 
             generator.add_label([exit_label])
 
         # Define index of access by row-major
-        coeficients = list(the_symbol.dimensions.values())
+        coefficients = list(the_symbol.dimensions.values())
 
         generator.add_comment("Mapping multidimensional indexes to single index (row major)")
         p = generator.new_temp()
         generator.add_expression(p, "0", "", "")
         for i in range(len(dimensions) - 1):
-            r = math.prod(coeficients[i + 1:])
+            r = math.prod(coefficients[i + 1:])
             partial = generator.new_temp()
             generator.add_expression(partial, str(r), dimensions[i], "*")
             generator.add_expression(p, p, partial, "+")
@@ -213,7 +213,3 @@ class ArrayReference(Expression):
         #                       content_type=None, capacity=None)
         # return ValueTuple(_type=the_symbol.symbol_type, value=returning, is_mutable=the_symbol.is_mutable,
         #                   content_type=None, capacity=None)
-
-
-
-

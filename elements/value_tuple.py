@@ -26,4 +26,3 @@ class ValueTuple:
 
     def __repr__(self):
         return f'ValTup(v:{self.value}, t:{self.expression_type})'
-

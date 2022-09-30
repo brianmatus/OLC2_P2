@@ -85,10 +85,6 @@ class VariableReference(Expression):
                               generator=generator, content_type=the_symbol.symbol_type, capacity=None, is_tmp=True,
                               true_label=[""], false_label=[""])
 
-
-
-
-
         # if string, need to buffer al heap to other location
         exit_label = generator.new_label()
 

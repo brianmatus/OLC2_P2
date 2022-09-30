@@ -82,7 +82,7 @@ class Environment:
                       line: int, column: int):
         the_symbol: Union[Symbol, None] = self.symbol_table.get(variable_id)
         if the_symbol is not None:
-            error_msg = f"Variable <{variable_id}> ya definida en el ambito actual." \
+            error_msg = f"Variable <{variable_id}> ya definida en el ámbito actual." \
                         f"ALLOW_NESTED_VARIABLE_OVERRIDE={global_config.ALLOW_NESTED_VARIABLE_OVERRIDE}"
             global_config.log_semantic_error(error_msg, line, column)
             raise SemanticError(error_msg, line, column)
@@ -127,7 +127,7 @@ class Environment:
         return self.parent_environment.get_variable(_id)
 
     def get_variable_p_deepness(self, _id: str, r) -> int:
-        t:ArraySymbol = self.symbol_table.get(_id)
+        t: ArraySymbol = self.symbol_table.get(_id)
         if t is not None:
             if r == 0:
                 return 0-t.heap_position
@@ -162,18 +162,8 @@ class Environment:
             return the_symbol
 
         if isinstance(the_symbol, ArraySymbol):
-            # if result._type != ElementType.ARRAY_EXPRESSION:
-            #     error_msg = f'Variable {_id} de tipo {the_symbol._type.name}(array' \
-            #                 f'no puede ser asignada valor de tipo {result._type.name}(no array)'
-            #     global_config.log_semantic_error(error_msg, line, column)
-            #     raise SemanticError(error_msg, line, column)
-            #
-            # the_symbol.value = result.value
-            # the_symbol.is_init = True
-            # return
-            # TODO implement
             for i in range(20):
-                print(f"c_env.py::({i}/20 warnings) set_variable for array detected, to be implemented")
+                print(f"c_env.py::({i}/20 warnings) set_variable for array detected, this should not happen")
 
         # Type mismatch check
         if the_symbol.symbol_type != result.expression_type:

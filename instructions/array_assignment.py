@@ -2,7 +2,6 @@ import math
 from typing import Union, List
 
 import global_config
-from returns.ast_return import ASTReturn
 from returns.exec_return import ExecReturn
 from abstract.instruction import Instruction
 from elements.c_env import Environment
@@ -94,7 +93,7 @@ class ArrayAssignment(Instruction):
             raise SemanticError(error_msg, self.line, self.column)
 
         # Index out of bounds check
-        resulting = the_symbol
+        # resulting = the_symbol
         error_label = generator.new_label()
         exit_label = generator.new_label()
         for i in range(len(dimensions)):
@@ -106,25 +105,24 @@ class ArrayAssignment(Instruction):
 
         generator.add_goto(exit_label)
         generator.add_label([error_label])
-        generator.add_print_message(f"ERROR SEMANTICO: Size incorrecto de array "
+        generator.add_print_message(f"ERROR SEMANTIC: Size incorrecto de array "
                                     f"en linea:{self.line} columna:{self.column}")
         generator.add_error_return("2")
 
         generator.add_label([exit_label])
 
-
         # # print(resulting)
         # # Same dimensions?
         # to_match = global_config.extract_dimensions_to_dict(resulting)
         #
-        # # print("aqui xd")
+        # # print("aquí xd")
         # # print(to_match)
         # # print(expr.value)
         #
         # match = global_config.match_dimensions(list(to_match.keys()), expr.value)
         # # print(match)
         #
-        # # print('aqui 2')
+        # # print('aquí 2')
         # # print("to be replaced:")
         # # print(resulting)
         # # print("the replacement:")
@@ -156,13 +154,13 @@ class ArrayAssignment(Instruction):
                               propagate_method_return=False, propagate_continue=False, propagate_break=False)
 
         # Define index of access by row-major
-        coeficients = list(the_symbol.dimensions.values())
+        coefficients = list(the_symbol.dimensions.values())
 
         generator.add_comment("Mapping multidimensional indexes to single index (row major)")
         p = generator.new_temp()
         generator.add_expression(p, "0", "", "")
         for i in range(len(dimensions)-1):
-            r = math.prod(coeficients[i+1:])
+            r = math.prod(coefficients[i+1:])
             partial = generator.new_temp()
             generator.add_expression(partial, str(r), dimensions[i], "*")
             generator.add_expression(p, p, partial, "+")
@@ -185,8 +183,3 @@ class ArrayAssignment(Instruction):
                           propagate_method_return=False, propagate_continue=False, propagate_break=False)
 
         # return ExecReturn(ExecReturn.BOOL, True, False, False, False)
-
-
-
-
-

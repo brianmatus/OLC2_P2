@@ -61,7 +61,6 @@ class Declaration(Instruction):
                                                        self.line, self.column)
                         return correct_one.execute(env)
 
-
         # Using not_init instead
         if self.expression is None:
             # tmp_var: Symbol = env.save_variable(self.variable_id, self.expression_type, self.is_mutable, False,

@@ -1,4 +1,3 @@
-from typing import Union, List
 from abstract.expression import Expression
 
 
