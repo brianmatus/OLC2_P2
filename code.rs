@@ -8,23 +8,13 @@
 
 
 fn main () {
-    //let x = 11;
-    //ola(420);
-    //let y = 22;
-    //ola(421);
-
-    //println!("Prueba de datos corrompidos");
-    //println!("x:{}",x);
-    //println!("y:{}",y);
-
-    let mut arr1 = [[1,2],[3,4]];
-    let mut arr2 = arr1;
-
-    arr2[0][0] = 42;
-
-    println!("Prueba de referencia de arrays");
+    let mut arr1 = [["1","2"],["3","4"]];
+    let mut x = arr1[0];
+    println!("x:{:?}",x);
     println!("arr1:{:?}",arr1);
-    println!("arr2:{:?}",arr2);
+    x[0] = "42";
+    println!("x:{:?}",x);
+    println!("arr1:{:?}",arr1);
 
 
 }

@@ -33,6 +33,7 @@ from expressions.arithmetic import Arithmetic
 from expressions.logic import Logic
 from expressions.array_expression import ArrayExpression
 from expressions.variable_ref import VariableReference
+from expressions.array_reference import ArrayReference
 
 
 tokens = lexer.tokens
@@ -56,7 +57,7 @@ precedence = (
     # ('nonassoc', 'DOT'),
     ('nonassoc', 'PREC_FUNC_CALL'),
     # ('nonassoc', 'PREC_METHOD_CALL'),
-    # ('nonassoc', 'PREC_ARRAY_REF')
+    ('nonassoc', 'PREC_ARRAY_REF')
 
 )
 
@@ -432,7 +433,13 @@ def p_expression_array_expression(p):
     p[0] = p[1]
 
 
-# ###################################################REFERENCES#########################################################
+# ####################################################ARRAY REF#########################################################
+def p_array_ref(p):
+    """expression : ID array_indexes %prec PREC_ARRAY_REF"""
+    p[0] = ArrayReference(p[1], p[2], p.lineno(1), -1)
+
+
+# #####################################################VARIABLE REF#####################################################
 def p_var_ref_e(p):
     """expression : ID %prec PREC_VAR_REF"""
     p[0] = VariableReference(p[1], p.lineno(1), -1)

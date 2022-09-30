@@ -55,31 +55,33 @@ class ArrayAssignment(Instruction):
         ind: Expression
         for ind in self.indexes:
             result: ValueTuple = ind.execute(env)
-
-            # FIXME "or isinstance ..." can be avoided due to array now having it's own subtype?
             if result.expression_type not in [ExpressionType.INT, ExpressionType.USIZE]:
                 error_msg = f'El acceso a array debe de ser con tipo entero/usize'
                 log_semantic_error(error_msg, self.line, self.column)
                 raise SemanticError(error_msg, self.line, self.column)
 
             generator.combine_with(result.generator)
-
             dimensions.append(result.value)
 
-        if not isinstance(expr.value, list):
-            if the_symbol.symbol_type != expr.expression_type:
-                error_msg = f'El elemento del array no concuerda en tipo con su definición'
-                global_config.log_semantic_error(error_msg, self.line, self.column)
-                raise SemanticError(error_msg, self.line, self.column)
+        if the_symbol.symbol_type != expr.expression_type:
+            error_msg = f'El elemento del array no concuerda en tipo con su definición'
+            global_config.log_semantic_error(error_msg, self.line, self.column)
+            raise SemanticError(error_msg, self.line, self.column)
 
-        else:
-            r = global_config.match_array_type(the_symbol.symbol_type, expr.value)
-            # print(f'Type match:{r}')
-
-            if not r:
-                error_msg = f'Uno o mas elementos del array no concuerdan en tipo con su definición'
-                global_config.log_semantic_error(error_msg, self.line, self.column)
-                raise SemanticError(error_msg, self.line, self.column)
+        # if not isinstance(expr.value, list):
+        #     if the_symbol.symbol_type != expr.expression_type:
+        #         error_msg = f'El elemento del array no concuerda en tipo con su definición'
+        #         global_config.log_semantic_error(error_msg, self.line, self.column)
+        #         raise SemanticError(error_msg, self.line, self.column)
+        #
+        # else:
+        #     r = global_config.match_array_type(the_symbol.symbol_type, expr.value)
+        #     # print(f'Type match:{r}')
+        #
+        #     if not r:
+        #         error_msg = f'Uno o mas elementos del array no concuerdan en tipo con su definición'
+        #         global_config.log_semantic_error(error_msg, self.line, self.column)
+        #         raise SemanticError(error_msg, self.line, self.column)
 
         # print(the_symbol.dimensions)
         # print(dimensions)
@@ -91,9 +93,7 @@ class ArrayAssignment(Instruction):
             log_semantic_error(error_msg, self.line, self.column)
             raise SemanticError(error_msg, self.line, self.column)
 
-
-
-        #Index out of bounds check
+        # Index out of bounds check
         resulting = the_symbol
         error_label = generator.new_label()
         exit_label = generator.new_label()
@@ -155,7 +155,7 @@ class ArrayAssignment(Instruction):
             return ExecReturn(generator=generator,
                               propagate_method_return=False, propagate_continue=False, propagate_break=False)
 
-        # Define index of acces by row-major
+        # Define index of access by row-major
         coeficients = list(the_symbol.dimensions.values())
 
         generator.add_comment("Mapping multidimensional indexes to single index (row major)")

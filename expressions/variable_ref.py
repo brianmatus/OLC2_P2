@@ -51,6 +51,7 @@ class VariableReference(Expression):
             generator.add_comment("var_ref::Get the symbol stack value")
             generator.add_get_stack(heap_address, ref_position)
 
+            # TODO check if
             return ValueTuple(value=heap_address, expression_type=ExpressionType.ARRAY,
                               is_mutable=array_symbol.is_mutable, generator=generator,
                               content_type=array_symbol.symbol_type, capacity=list(array_symbol.dimensions.values()),

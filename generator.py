@@ -55,6 +55,13 @@ class Generator:
             self.code = [f"int main(){{\n"
                          f"P = 0;\n"
                          f"H = 0;\n"
+                         f"int heap_iter;\n"
+                         f"for(heap_iter = 0; heap_iter < sizeof(HEAP) / sizeof(double); heap_iter++) {{\n"
+                         f"HEAP[heap_iter] = -42;\n"
+                         f"}}\n"
+                         f"for(heap_iter = 0; heap_iter < sizeof(STACK) / sizeof(double); heap_iter++) {{\n"
+                         f"STACK[heap_iter] = -42;\n"
+                         f"}}\n"
                          f"{self.get_code()}\n"
                          f"//--------------------------DEBUG INFO-----------------\n"
                          f'printf("Final H:%f\\n", H);\n'

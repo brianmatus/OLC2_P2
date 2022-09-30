@@ -8,7 +8,9 @@ from abstract.expression import Expression
 from elements.value_tuple import ValueTuple
 from elements.c_env import Symbol
 from generator import Generator
+from elements.c_env import ArraySymbol
 from expressions.variable_ref import VariableReference
+from expressions.array_reference import ArrayReference
 
 
 class Declaration(Instruction):
@@ -41,13 +43,24 @@ class Declaration(Instruction):
         if isinstance(self.expression, VariableReference):
             the_symbol: Symbol = env.get_variable(self.expression.variable_id)
 
-            from elements.c_env import ArraySymbol
-
             if the_symbol is not None:
                 if isinstance(the_symbol, ArraySymbol):
                     correct_one = ArrayDeclaration(self.variable_id, None, self.expression, self.is_mutable,
                                                    self.line, self.column)
                     return correct_one.execute(env)
+
+        # Do we have an impostor? x3
+        if isinstance(self.expression, ArrayReference):
+
+            the_symbol: ArraySymbol = env.get_variable(self.expression.variable_id)
+
+            if the_symbol is not None:
+                if isinstance(the_symbol, ArraySymbol):
+                    if len(self.expression.indexes) < len(the_symbol.dimensions):
+                        correct_one = ArrayDeclaration(self.variable_id, None, self.expression, self.is_mutable,
+                                                       self.line, self.column)
+                        return correct_one.execute(env)
+
 
         # Using not_init instead
         if self.expression is None:

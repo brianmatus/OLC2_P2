@@ -10,7 +10,7 @@ from abstract.instruction import Instruction
 from expressions.array_expression import ArrayExpression
 from element_types.c_expression_type import ExpressionType
 from expressions.variable_ref import VariableReference
-# from expressions.array_reference import ArrayReference
+from expressions.array_reference import ArrayReference
 
 from elements.c_env import Environment
 from element_types.array_def_type import ArrayDefType
@@ -21,7 +21,7 @@ class ArrayDeclaration(Instruction):
 
     # TODO add array_reference and var_reference to expression type,
     def __init__(self, variable_id: str, array_type: Union[ArrayDefType, None],
-                 expression: Union[ArrayExpression, VariableReference, None], is_mutable: bool,  # ArrayReference too
+                 expression: Union[ArrayExpression, VariableReference, ArrayReference, None], is_mutable: bool,
                  line: int, column: int):
         self.variable_id = variable_id
         self.array_type = array_type
@@ -35,7 +35,9 @@ class ArrayDeclaration(Instruction):
     def execute(self, env: Environment) -> ExecReturn:
 
         # Variable ref from another array (total array, partial may be not allowed)
-        if isinstance(self.expression, VariableReference):
+
+        # if isinstance(self.expression, VariableReference) or isinstance(self.expression, ArrayReference):
+        if type(self.expression) in [VariableReference, ArrayReference]:
             result = self.expression.execute(env)
 
             if self.array_type is not None:
@@ -84,10 +86,14 @@ class ArrayDeclaration(Instruction):
             for i in range(1, len(result.capacity)+1):
                 d[i] = result.capacity[i-1]
 
-            # the_symbol = ...
-            env.save_variable_array(variable_id=self.variable_id, content_type=result.content_type,
-                                    dimensions=d, is_mutable=self.is_mutable,
-                                    is_init=True, line=self.line, column=self.column)
+            the_symbol = env.save_variable_array(variable_id=self.variable_id, content_type=result.content_type,
+                                                 dimensions=d,
+                                                 is_init=True, is_mutable=self.is_mutable,
+                                                 line=self.line, column=self.column)
+
+            place = generator.new_temp()
+            generator.add_expression(place, "P", the_symbol.heap_position, "+")
+            generator.add_set_stack(place, result.value)
 
             return ExecReturn(generator=generator,
                               propagate_method_return=False, propagate_continue=False, propagate_break=False)
