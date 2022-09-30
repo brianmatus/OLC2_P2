@@ -185,7 +185,6 @@ def flatten_array(arr: List[Expression]) -> List[Expression]:
     return flat
 
 
-
 def is_arithmetic_pure_literals(expr) -> bool:
 
     from expressions.literal import Literal

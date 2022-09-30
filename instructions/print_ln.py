@@ -44,6 +44,7 @@ class PrintLN(Instruction):
 
         if len(self.expr_list[1:]) == 0:
             generator.add_print_message(the_str)
+            the_str = ""
 
         for arg in self.expr_list[1:]:
             the_arg = arg.execute(env)

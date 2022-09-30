@@ -22,6 +22,7 @@ from errors.syntactic_error import SyntacticError
 
 
 import global_config
+import io
 
 
 
@@ -29,9 +30,16 @@ import global_config
 
 
 def start():  # FIXME this should be replaced with frontend sending the code
-    f = open("code.rs", "r")
-    input_code: str = f.read()
-    f.close()
+    # f = open("code.rs", "r", encoding='utf-8')
+    # input_code: str = f.read()
+    # f.close()
+
+    input_code = ""
+
+    with io.open('code.rs', 'r', encoding='utf8', newline='\n') as fin:
+        input_code = fin.read()
+
+
 
     result: dict = parse_code(input_code)
     return result
@@ -123,7 +131,6 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
     # print("#############################################################################")
     # print("#############################################################################")
 
-
     print(instruction_set)
 
     synthetic_call = FunctionCallI("main", [], -1, -1)
@@ -134,7 +141,6 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
         final_generator: Generator = Generator()
         main_start = final_generator.new_label()
         final_generator.add_goto(main_start)
-
 
         for instruction in instruction_set:
             if not isinstance(instruction, FunctionDeclaration):  # Or Module declaration
@@ -172,11 +178,13 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
 
         _symbol_table = main_func.environment.symbol_table
         print(final_generator.set_as_final_code())
-        output_file = open('C:\\Users\\Matus\\Documents\\USAC\\Compi2\\Proyecto2\\c-interp\\main.c', "w")
-        output_file.write(str(final_generator.get_code()))
-        output_file.close()
+        # output_file = open('C:\\Users\\Matus\\Documents\\USAC\\Compi2\\Proyecto2\\c-interp\\main.c', "w")
+        # output_file.write(str(final_generator.get_code()))
+        # output_file.close()
 
-
+        path = 'C:\\Users\\Matus\\Documents\\USAC\\Compi2\\Proyecto2\\c-interp\\main.c'
+        with io.open(path, 'w', encoding='utf8', newline='\n') as fout:
+            fout.write(final_generator.get_code())
 
         print("-------------------------------------------------------------------------------------------------------")
 
@@ -199,11 +207,13 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
             "lexic_errors": global_config.lexic_error_list,
             "syntactic_errors": global_config.syntactic_error_list,
             "semantic_errors": global_config.semantic_error_list,
-            # "symbol_table": global_config.tmp_symbol_table + global_config.generate_symbol_table(instruction_set, "Main")
+            # "symbol_table":
+            # global_config.tmp_symbol_table + global_config.generate_symbol_table(instruction_set, "Main")
         }
 
         # return [global_config.lexic_error_list, global_config.syntactic_error_list,
-        #                    global_config.semantic_error_list, global_config.generate_symbol_table(instruction_set, "Main"),
+        #                    global_config.semantic_error_list,
+        #                    global_config.generate_symbol_table(instruction_set, "Main"),
         #                    global_config.console_output, ""]
 
     except Exception as err:
@@ -228,7 +238,6 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
             print(semantic)
             # print("[row:%s,column:%s]ERROR:%s", semantic.row, semantic.column, semantic.reason)
 
-
         print(global_config.console_output)
 
         global_config.main_environment = Environment(None)
@@ -238,7 +247,8 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
             "lexic_errors": global_config.lexic_error_list,
             "syntactic_errors": global_config.syntactic_error_list,
             "semantic_errors": global_config.semantic_error_list,
-            # "symbol_table": global_config.tmp_symbol_table + global_config.generate_symbol_table(instruction_set, "Main")
+            # "symbol_table":
+            # global_config.tmp_symbol_table + global_config.generate_symbol_table(instruction_set, "Main")
         }
 
         # return [global_config.lexic_error_list,
@@ -248,10 +258,5 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
         #                    global_config.generate_symbol_table(instruction_set, "Main")]
 
 
-
-
-
-
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     start()

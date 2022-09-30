@@ -12,7 +12,6 @@ STACK_COUNTER = 0
 class Generator:
     heap = 5
 
-
     def __init__(self) -> None:
         # self.generator = None
         self.code: list = []

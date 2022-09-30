@@ -1,12 +1,5 @@
-Declarations or assigments should be checked for expression of type VariableReference
-String sum should return other heap location with the combination of both
-
-Hide original string of string_literal in true_label for println usage. Too complicated to do with other :(
-
-
-
-
-
+environment transfer inst should be a queue (maybe even make it static in global_config)
+encode file as utf-8? only literals? python 3 already handles utf-8? idk man im tired
 
 Will I do this? idk xd
 Check for arrays passed to func calls
