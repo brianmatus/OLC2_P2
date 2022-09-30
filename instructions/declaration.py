@@ -128,7 +128,11 @@ class Declaration(Instruction):
             t = generator.new_temp()
             generator.add_comment("declaration::Set value")
             generator.add_expression(t, "P", the_symbol.heap_position, "+")
-            generator.add_set_stack(t, str(result.value))
+
+            if result.expression_type == ExpressionType.CHAR:
+                generator.add_set_stack(t, str(ord(result.value)))
+            else:
+                generator.add_set_stack(t, str(result.value))
             return ExecReturn(generator=generator,
                               propagate_method_return=False, propagate_continue=False, propagate_break=False)
 

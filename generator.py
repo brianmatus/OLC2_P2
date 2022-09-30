@@ -3,7 +3,7 @@ from typing import List
 
 debug_prints = True
 add_comments = True
-HEAP_SIZE = 100
+HEAP_SIZE = 900
 HEAP_COUNTER = 0
 STACK_SIZE = 50
 STACK_COUNTER = 0
@@ -63,22 +63,22 @@ class Generator:
                          f"STACK[heap_iter] = -42;\n"
                          f"}}\n"
                          f"{self.get_code()}\n"
-                         f"//--------------------------DEBUG INFO-----------------\n"
-                         f'printf("Final H:%f\\n", H);\n'
-                         f'printf("Final P:%f\\n", P);\n'
-                         f'printf("STACK:\\n[\\n");\n'
-                         f'int i;\n'
-                         
-                         
-                         f'for(i = 0; i < sizeof(STACK) / sizeof(double); i++){{\n'
-                         f'printf("%i : %.2f\\n", i, STACK[i]);\n'
-                         f'}}\n'
-                         f'printf("]\\n");\n'
-                         f'printf("HEAP:\\n[\\n");\n'
-                         f'for(i = 0; i < sizeof(HEAP) / sizeof(double); i++){{\n'
-                         f'printf("%i : %.2f\\n", i, HEAP[i]);\n'
-                         f'}}\n'
-                         f'printf("]\\n");\n'
+                         # f"//--------------------------DEBUG INFO-----------------\n"
+                         # f'printf("Final H:%f\\n", H);\n'
+                         # f'printf("Final P:%f\\n", P);\n'
+                         # f'printf("STACK:\\n[\\n");\n'
+                         # f'int i;\n'
+                         # 
+                         # 
+                         # f'for(i = 0; i < sizeof(STACK) / sizeof(double); i++){{\n'
+                         # f'printf("%i : %.2f\\n", i, STACK[i]);\n'
+                         # f'}}\n'
+                         # f'printf("]\\n");\n'
+                         # f'printf("HEAP:\\n[\\n");\n'
+                         # f'for(i = 0; i < sizeof(HEAP) / sizeof(double); i++){{\n'
+                         # f'printf("%i : %.2f\\n", i, HEAP[i]);\n'
+                         # f'}}\n'
+                         # f'printf("]\\n");\n'
                          
                          f"return 0;\n"
                          f"}}\n"]

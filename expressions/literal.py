@@ -41,7 +41,7 @@ class Literal(Expression):
             generator = Generator()
             the_label = generator.new_label()
             generator.add_goto(the_label)
-            if self.value == "0":
+            if self.value == 0:
                 return ValueTuple(value=generator, expression_type=self.expression_type, is_mutable=False,
                                   content_type=self.expression_type, capacity=None, is_tmp=True, generator=generator,
                                   true_label=[], false_label=[the_label])

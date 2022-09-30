@@ -47,7 +47,8 @@ class PrintLN(Instruction):
 
         for arg in self.expr_list[1:]:
             the_arg = arg.execute(env)
-            generator.combine_with(the_arg.generator)
+            if the_arg.content_type != ExpressionType.BOOL:
+                generator.combine_with(the_arg.generator)
 
             i1 = the_str.find("{}")  # -1
             i2 = the_str.find("{:?}")  # 4
@@ -121,6 +122,9 @@ class PrintLN(Instruction):
             # ############################################# Primitives #################################################
             generate_normal_primitive_print(the_arg, generator, the_arg.value)
             continue
+
+        if len(the_str) != 0:
+            generator.add_print_message(the_str)
 
         if self.has_ln:
             generator.add_newline()
@@ -223,15 +227,26 @@ def traverse_loop_for_print(generator: Generator, the_arg: ValueTuple, ptr: str,
 def generate_normal_primitive_print(the_arg: ValueTuple, generator: Generator, ptr: str):
     char = generator.new_temp()
     generator.add_comment("--------------------------------print:normal primitive printing----------------------------")
-    generator.add_expression(char, ptr, "", "")
+
     match the_arg.content_type:
         case ExpressionType.CHAR:
+            generator.add_expression(char, ptr, "", "")
             generator.add_printf("c", f"(int){char}")
         case ExpressionType.INT:
+            generator.add_expression(char, ptr, "", "")
             generator.add_printf("i", f"(int){char}")
         case ExpressionType.FLOAT:
+            generator.add_expression(char, ptr, "", "")
             generator.add_printf("f", char)
-        # TODO Add boolean print
+        case ExpressionType.BOOL:
+            generator.combine_with(the_arg.generator)
+            exit_label = generator.new_label()
+            generator.add_label(the_arg.true_label)
+            generator.add_print_message("true")
+            generator.add_goto(exit_label)
+            generator.add_label(the_arg.false_label)
+            generator.add_print_message("false")
+            generator.add_label([exit_label])
         case _:
             error_msg = f'generate_primitive_print::expression type not detected, is this possible?'
             global_config.log_semantic_error(error_msg, -1, -1)
@@ -268,7 +283,7 @@ def generate_normal_string_print(generator: Generator, ptr: str):
     generator.add_comment("--------------------------------print:string printing--------------------------------")
     generator.add_expression(real_ptr, ptr, "", "")
     bucle_label = generator.new_label()
-    generator.add_print_message("\"")
+    # generator.add_print_message("\"")
     generator.add_label([bucle_label])
     char = generator.new_temp()
     generator.add_get_heap(char, real_ptr)
@@ -279,7 +294,7 @@ def generate_normal_string_print(generator: Generator, ptr: str):
     generator.add_expression(real_ptr, real_ptr, "1", "+")
     generator.add_goto(bucle_label)
     generator.add_label([exit_label])
-    generator.add_print_message("\"")
+    # generator.add_print_message("\"")
     generator.add_comment("-------------------------------print:END string printing--------------------------------")
 
 

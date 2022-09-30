@@ -26,6 +26,9 @@ class Conditional(Instruction):
         final_generator.add_comment(f"<<<-------------------------------If/Elseif/Else"
                                     f"------------------------------->>>")
 
+        final_generator.add_comment("-----Update P for a new environment-----")
+        final_generator.add_expression("P", "P", env.size, "+")
+
         exit_label = final_generator.new_label()
 
         clause: ConditionClause
@@ -39,12 +42,15 @@ class Conditional(Instruction):
                     a = instruction.execute(clause.environment)
                     final_generator.combine_with(a.generator)
                 final_generator.add_goto(exit_label)  # actually not needed for default/else but idk, just in case
+                break  # 'continue' instead? idk, should be the last element anyways
 
             from elements.value_tuple import ValueTuple
 
             clause_exit = final_generator.new_label()
 
             result: ValueTuple = clause.condition.execute(clause.environment)
+
+            final_generator.combine_with(result.generator)
 
             if result.expression_type is not ExpressionType.BOOL:
                 error_msg = f"La expresión de un if debe ser de tipo booleano." \
@@ -62,8 +68,11 @@ class Conditional(Instruction):
                 a = instruction.execute(clause.environment)
                 final_generator.combine_with(a.generator)
             final_generator.add_goto(exit_label)
+            final_generator.add_label([clause_exit])
 
         final_generator.add_label([exit_label])
+        final_generator.add_comment("-----Revert P for a previous environment-----")
+        final_generator.add_expression("P", "P", env.size, "-")
 
         return ExecReturn(generator=final_generator,
                           propagate_method_return=False, propagate_break=False,propagate_continue=False)

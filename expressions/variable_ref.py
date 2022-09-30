@@ -57,21 +57,37 @@ class VariableReference(Expression):
                               content_type=array_symbol.symbol_type, capacity=list(array_symbol.dimensions.values()),
                               is_tmp=True, true_label=[""], false_label=[""])
 
-        # TODO check, this may need stack referencing in a tmp and then assigning that, idk
         generator = Generator()
         generator.add_comment(f"-------------------------------Variable Reference of {self.variable_id}"
                               f"-------------------------------")
-        # Normal symbols other than array and vectors should be copied
+
+        p_deepness = environment.get_variable_p_deepness(self.variable_id, 0)
         stack_address = generator.new_temp()
-        generator.add_expression(stack_address, "P", the_symbol.heap_position, "+")
+        generator.add_expression(stack_address, "P", str(0 - p_deepness), "+")
 
         value = generator.new_temp()
         generator.add_get_stack(value, stack_address)
 
+        if the_symbol.symbol_type == ExpressionType.BOOL:
+            true_label = generator.new_label()
+            false_label = generator.new_label()
+            generator.add_if(value, "1", "==", true_label)
+            generator.add_goto(false_label)
+
+            return ValueTuple(value="dont_use_me", expression_type=the_symbol.symbol_type,
+                              is_mutable=the_symbol.is_mutable,
+                              generator=generator, content_type=the_symbol.symbol_type, capacity=None, is_tmp=True,
+                              true_label=[true_label], false_label=[false_label])
+
+        # Normal symbols other than array and vectors should be copied
         if the_symbol.symbol_type not in [ExpressionType.STRING_PRIMITIVE, ExpressionType.STRING_CLASS]:
             return ValueTuple(value=value, expression_type=the_symbol.symbol_type, is_mutable=the_symbol.is_mutable,
                               generator=generator, content_type=the_symbol.symbol_type, capacity=None, is_tmp=True,
                               true_label=[""], false_label=[""])
+
+
+
+
 
         # if string, need to buffer al heap to other location
         exit_label = generator.new_label()

@@ -317,14 +317,14 @@ class Arithmetic(Expression):
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.INT:
                     new_tmp = generator.new_temp()
                     generator.code = left.generator.code + right.generator.code
-                    generator.add_expression(new_tmp, left.value, right.value, "%")
+                    generator.add_expression(new_tmp, f'(int){left.value}', f'(int){right.value}', "%")
                     return ValueTuple(new_tmp, ExpressionType.INT, False,
                                       generator, ExpressionType.INT, None, True, [], [])
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
                     new_tmp = generator.new_temp()
                     generator.code = left.generator.code + right.generator.code
-                    generator.add_expression(new_tmp, left.value, right.value, "%")
+                    generator.add_expression(new_tmp, f'(int){left.value}', f'(int){right.value}', "%")
                     return ValueTuple(new_tmp, ExpressionType.INT, False,
                                       generator, ExpressionType.INT, None, True, [], [])
 
@@ -333,7 +333,7 @@ class Arithmetic(Expression):
                     if global_config.is_arithmetic_pure_literals(self.right):
                         new_tmp = generator.new_temp()
                         generator.code = left.generator.code + right.generator.code
-                        generator.add_expression(new_tmp, left.value, right.value, "%")
+                        generator.add_expression(new_tmp, f'(int){left.value}', f'(int){right.value}', "%")
                         return ValueTuple(new_tmp, ExpressionType.USIZE, False,
                                           generator, ExpressionType.USIZE, None, True, [], [])
 
@@ -342,7 +342,7 @@ class Arithmetic(Expression):
                     if global_config.is_arithmetic_pure_literals(self.left):
                         new_tmp = generator.new_temp()
                         generator.code = left.generator.code + right.generator.code
-                        generator.add_expression(new_tmp, left.value, right.value, "%")
+                        generator.add_expression(new_tmp, f'(int){left.value}', f'(int){right.value}', "%")
                         return ValueTuple(new_tmp, ExpressionType.USIZE, False,
                                           generator, ExpressionType.USIZE, None, True, [], [])
 
