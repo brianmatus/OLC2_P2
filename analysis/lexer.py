@@ -73,7 +73,7 @@ tokens = [
 ] + list(reserved.values())
 
 
-t_ignore = '\t '
+t_ignore = '\t \r'
 
 
 def t_COMMENT(t):

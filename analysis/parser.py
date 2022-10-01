@@ -24,6 +24,7 @@ from instructions.array_assignment import ArrayAssignment
 from instructions.function_declaration import FunctionDeclaration
 from instructions.function_call import FunctionCallI
 from instructions.conditional import Conditional
+from instructions.conditional_match import MatchI
 from instructions.print_ln import PrintLN
 # ################################EXPRESSIONS#########################################
 from element_types.arithmetic_type import ArithmeticType
@@ -87,8 +88,85 @@ def p_instruction(p):  # since all here are p[0] = p[1] (except void_inst) add a
     | function_call_i SEMICOLON
     | if_else_elseif
     | println_inst SEMICOLON
+    | match_statement
     """
     p[0] = p[1]
+
+
+def p_no_semicolon_instruction(p):  # TODO all added to p_instruction should be added here
+    """
+    no_semicolon_instruction : var_declaration
+    | var_assignment
+    | array_declaration
+    | function_declaration
+    | array_assignment
+    | function_call_i
+    | if_else_elseif
+    | println_inst
+    | match_statement
+    """
+    p[0] = p[1]
+
+
+# #################################################MATCH CLAUSES########################################################
+def p_match_statement(p):
+    """match_statement : MATCH expression KEY_O match_conditions KEY_C"""
+    p[0] = MatchI(p[2], p[4], p.lineno(1), -1)
+
+
+def p_match_conditions_1(p):
+    """match_conditions : cases default_case"""
+    p[0] = p[1] + p[2]
+
+
+def p_match_conditions_2(p):
+    """match_conditions : cases"""
+    p[0] = p[1]
+
+
+def p_match_conditions_3(p):
+    """match_conditions : default_case"""
+    p[0] = p[1]
+
+
+def p_switch_cases_r_1(p):
+    """cases : cases match_expr_list EQUAL OPE_MORE KEY_O instructions KEY_C"""
+    p[0] = p[1] + [MatchClause(p[2], p[6], Environment(None))]
+
+
+def p_switch_cases_r_2(p):
+    """cases : cases match_expr_list EQUAL OPE_MORE no_semicolon_instruction COMMA"""
+    p[0] = p[1] + [MatchClause(p[2], [p[5]], Environment(None))]
+
+
+def p_switch_cases_1(p):
+    """cases : match_expr_list EQUAL OPE_MORE KEY_O instructions KEY_C"""
+    p[0] = [MatchClause(p[1], p[5], Environment(None))]
+
+
+def p_switch_cases_2(p):
+    """cases : match_expr_list EQUAL OPE_MORE no_semicolon_instruction COMMA"""
+    p[0] = [MatchClause(p[1], [p[4]], Environment(None))]
+
+
+def p_default_case_1(p):
+    """default_case : UNDERSCORE_NULL EQUAL OPE_MORE KEY_O instructions KEY_C"""
+    p[0] = [MatchClause(None, p[5], Environment(None))]
+
+
+def p_default_case_2(p):
+    """default_case : UNDERSCORE_NULL EQUAL OPE_MORE no_semicolon_instruction"""
+    p[0] = [MatchClause(None, [p[4]], Environment(None))]
+
+
+def p_match_expr_list_r(p):
+    """match_expr_list : match_expr_list OR_STICK expression"""
+    p[0] = p[1] + [p[3]]
+
+
+def p_match_expr_list(p):
+    """match_expr_list : expression"""
+    p[0] = [p[1]]
 
 
 # ###########################################PRINTLN####################################################################
