@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import global_config
 from elements.c_env import Environment
@@ -8,6 +8,8 @@ from element_types.c_expression_type import ExpressionType
 from abstract.instruction import Instruction
 from returns.exec_return import ExecReturn
 from errors.semantic_error import SemanticError
+
+from expressions.array_expression import ArrayExpression
 
 from global_config import function_list, log_semantic_error
 from instructions.function_declaration import FunctionDeclaration
@@ -56,8 +58,13 @@ class FunctionCallI(Instruction):
         final_generator.add_comment(f"-------------------------------Function Call of {self.function_id}"
                                     f"-------------------------------")
 
-        final_generator.add_comment("-----Update P for a new environment-----")
-        final_generator.add_expression("P", "P", env.size, "+")
+        final_generator.add_comment("-----Temporal new P for setting up func args in new env-----")
+        delta_p = final_generator.new_temp()
+        final_generator.add_expression(delta_p, "P", env.size, "+")
+
+        offset = 0  # For arrays with no size set
+
+        arg_position = final_generator.new_temp()
 
         for i in range(len(self.params)):
 
@@ -89,10 +96,50 @@ class FunctionCallI(Instruction):
                     log_semantic_error(error_msg, self.line, self.column)
                     raise SemanticError(error_msg, self.line, self.column)
 
+                if isinstance(self.params[i].expr, ArrayExpression):
+                    if not global_config.match_array_type(param.content_type, given.value):
+                        error_msg = f"La función {self.function_id} fue llamada con un tipo incorrecto de argumento. " \
+                                    f"Arg #{i + 1}" \
+                                    f"({param.content_type.name} <-> {given.content_type.name})"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                else:
+                    if param.content_type != given.content_type:
+                        error_msg = f"La función {self.function_id} fue llamada con un tipo incorrecto de argumento. " \
+                                    f"Arg #{i + 1}" \
+                                    f"({param.content_type.name} <-> {given.content_type.name})"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
             final_generator.add_comment(f"-----Arg #{i}-----")
-            arg_position = final_generator.new_temp()
-            final_generator.add_expression(arg_position, "P", str(i), "+")
-            final_generator.add_set_stack(arg_position, given.value)
+            # arg_position = final_generator.new_temp()  # replaced by one globally, for easier optimization
+            final_generator.add_expression(arg_position, delta_p, str(i+offset), "+")
+
+            if isinstance(self.params[i].expr, ArrayExpression):
+                gen, ptr = func_call_custom_array_expr(self.params[i].expr.value, env)
+                final_generator.combine_with(gen)
+                final_generator.add_set_stack(arg_position, ptr)
+            else:
+                final_generator.add_set_stack(arg_position, given.value)
+
+            if given.expression_type == ExpressionType.ARRAY:
+                if param.dimensions[1] is None:
+                    if isinstance(self.params[i].expr, ArrayExpression):
+                        the_dims = list(global_config.extract_dimensions_to_dict(given.value).values())
+                        for key in param.dimensions.keys():
+                            offset += 1
+                            final_generator.add_expression(arg_position, delta_p, str(i + offset), "+")
+                            final_generator.add_set_stack(arg_position, str(the_dims[key - 1]))
+                    else:
+                        # Needs to offset
+                        for key in param.dimensions.keys():
+                            offset += 1
+                            final_generator.add_expression(arg_position, delta_p, str(i + offset), "+")
+                            final_generator.add_set_stack(arg_position, str(given.capacity[key-1]))
+
+        final_generator.add_comment("-----Update P for a new environment-----")
+        final_generator.add_expression("P", "P", env.size, "+")
 
         final_generator.add_comment(f"-----Where should the func return once completed? To {self.comeback_label}-----")
         final_generator.add_expression("t1", str(self.turn), "", "")
@@ -103,3 +150,26 @@ class FunctionCallI(Instruction):
         final_generator.add_comment("-----Revert P for a previous environment-----")
         final_generator.add_expression("P", "P", env.size, "-")
         return ExecReturn(final_generator, False, False, False)
+
+
+def func_call_custom_array_expr(the_array_expr, env: Environment) -> Tuple[Generator, str]:
+    flat_array = global_config.flatten_array(the_array_expr)
+    generator = Generator()
+    generator.add_comment(f"-------------------------------Array Expr passed as arg-------------------------------")
+
+    values = []
+    for expr in flat_array:
+        r = expr.execute(env)
+        generator.combine_with(r.generator)
+        values.append(str(r.value))
+
+    t = generator.new_temp()
+    generator.add_expression(t, "H", "", "")
+    generator.add_set_stack(t, "H")
+
+    for val in values:
+        generator.add_set_heap("H", val)
+        generator.add_next_heap()
+
+    return generator,t
+

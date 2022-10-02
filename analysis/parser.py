@@ -35,6 +35,8 @@ from expressions.logic import Logic
 from expressions.array_expression import ArrayExpression
 from expressions.variable_ref import VariableReference
 from expressions.array_reference import ArrayReference
+from expressions.conditional_expression import ConditionalExpression
+from expressions.match_expression import MatchExpression
 
 
 tokens = lexer.tokens
@@ -413,9 +415,9 @@ def p_func_var_2(p):
     p[0] = IDTuple(p[1], p[4], True, False, {}, None)
 
 
-# def p_func_var_3(p):  # Should only be used in arrays (and vectors??)
-#     """func_var : ID COLON AMPERSAND func_decl_array_var_type"""
-#     p[0] = IDTuple(p[1], p[4][0], False, True, p[4][1], None)
+def p_func_var_3(p):  # Should only be used in arrays (and vectors??)
+    """func_var : ID COLON AMPERSAND func_decl_array_var_type"""
+    p[0] = IDTuple(p[1], p[4][0], False, True, p[4][1], None)
 
 
 # def p_func_var_4(p):
@@ -427,7 +429,7 @@ def p_func_var_2(p):
 #         tmp = tmp.content_type
 #     p[0] = IDTuple(p[1], ExpressionType.VECTOR, False, True, i, tmp.content_type)
 
-#
+
 # def p_func_var_5(p):
 #     """func_var : ID COLON AMPERSAND MUTABLE vector_type"""
 #     tmp = p[5]
@@ -438,24 +440,38 @@ def p_func_var_2(p):
 #     p[0] = IDTuple(p[1], ExpressionType.VECTOR, True, True, i, tmp.content_type)
 
 
-# def p_func_var_6(p):  # Should only be used in arrays (and vectors??)
-#     """func_var : ID COLON AMPERSAND MUTABLE func_decl_array_var_type"""
-#
-#     p[0] = IDTuple(p[1], p[5]["embedded_type"], True, True, p[5], None)
-#
-#
-# def p_func_var_7(p):  # Should only be used in arrays
-#     """func_var : ID COLON AMPERSAND array_type"""
-#
-#     dic, _type = global_config.array_type_to_dimension_dict_and_type(p[4])
-#     p[0] = IDTuple(p[1], _type, False, True, dic, None)
-#
-#
-# def p_func_var_8(p):  # Should only be used in arrays
-#     """func_var : ID COLON AMPERSAND MUTABLE array_type"""
-#
-#     dic, _type = global_config.array_type_to_dimension_dict_and_type(p[5])
-#     p[0] = IDTuple(p[1], _type, True, True, dic, None)
+def p_func_var_6(p):  # Should only be used in arrays (and vectors??)
+    """func_var : ID COLON AMPERSAND MUTABLE func_decl_array_var_type"""
+    dic: dict = p[5].copy()
+    dic.pop("embedded_type")
+    p[0] = IDTuple(p[1], ExpressionType.ARRAY, True, True, dic, p[5]["embedded_type"])
+
+
+def p_func_var_7(p):  # Should only be used in arrays
+    """func_var : ID COLON AMPERSAND array_type"""
+
+    dic, _type = global_config.array_type_to_dimension_dict_and_type(p[4])
+    p[0] = IDTuple(p[1], ExpressionType.ARRAY, False, True, dic, _type)
+
+
+def p_func_var_8(p):  # Should only be used in arrays
+    """func_var : ID COLON AMPERSAND MUTABLE array_type"""
+
+    dic, _type = global_config.array_type_to_dimension_dict_and_type(p[5])
+    p[0] = IDTuple(p[1], ExpressionType.ARRAY, True, True, dic, _type)
+
+
+def p_func_call_array_var_type_r(p):
+    """func_decl_array_var_type : BRACKET_O func_decl_array_var_type BRACKET_C"""
+    p[2][len(p[2])] = None
+
+    p[0] = p[2]  # further elements don't need to propagate type
+
+
+def p_func_call_array_var_type(p):
+    """func_decl_array_var_type : BRACKET_O variable_type BRACKET_C"""
+    p[0] = {1:  None}
+    p[0]["embedded_type"] = p[2]
 
 
 # ##################################################Variable Types######################################################
@@ -503,6 +519,130 @@ def p_variable_type_string(p):
 #######################################################################################################################
 #######################################################################################################################
 #######################################################################################################################
+
+
+# ############################################MATCH CLAUSES AS EXPR (NEEDS TESTING)#####################################
+def p_match_as_expr(p):
+    """expression : match_expr"""
+    p[0] = p[1]
+
+
+def p_match_expr(p):
+    """match_expr : MATCH expression KEY_O match_expr_conditions KEY_C"""
+    p[0] = MatchExpression(p[2], p[4], p.lineno(1), -1)
+
+
+def p_match_expr_conditions_1(p):
+    """match_expr_conditions : cases_expr default_case_expr"""
+    p[0] = p[1] + p[2]
+
+
+def p_match_expr_conditions_2(p):
+    """match_expr_conditions : cases_expr"""
+    p[0] = p[1]
+
+
+def p_match_expr_conditions_3(p):
+    """match_conditions : default_case_expr"""
+    p[0] = p[1]
+
+
+def p_switch_expr_cases_r(p):
+    """cases_expr : cases_expr match_expr_list EQUAL OPE_MORE expression COMMA"""
+    p[0] = p[1] + [MatchExpressionClause(p[2], p[5], Environment(None))]
+
+
+def p_switch_cases_expr(p):
+    """cases_expr : match_expr_list EQUAL OPE_MORE expression COMMA"""
+    p[0] = [MatchExpressionClause(p[1], p[4], Environment(None))]
+
+
+def p_default_case_expr(p):
+    """default_case_expr : UNDERSCORE_NULL EQUAL OPE_MORE expression"""
+    p[0] = [MatchExpressionClause(None, p[4], Environment(None))]
+
+
+# #####################################################IF AS EXPR#######################################################
+def p_if_expr(p):
+    """expression : if_else_elseif_expr"""
+    p[0] = p[1]
+
+
+def p_if_else_elseif_statement_1_expr(p):
+    """if_else_elseif_expr : if_s_expr"""
+    p[0] = ConditionalExpression(p[1], p.lineno(1), -1)
+    # print("cond expr 1")
+
+
+def p_if_else_elseif_statement_2_expr(p):
+    """if_else_elseif_expr : if_s_expr else_s_expr"""
+    p[0] = ConditionalExpression(p[1] + p[2], p.lineno(1), -1)
+    # print("cond expr 2")
+
+
+def p_if_else_elseif_statement_3_expr(p):
+    """if_else_elseif_expr : if_s_expr else_ifs_expr"""
+    p[0] = ConditionalExpression(p[1] + p[2], p.lineno(1), -1)
+    # print("cond expr 3")
+
+
+def p_if_else_elseif_statement_4_expr(p):
+    """if_else_elseif_expr : if_s_expr else_ifs_expr else_s_expr"""
+    p[0] = ConditionalExpression(p[1] + p[2] + p[3], p.lineno(1), -1)
+    # print("cond expr 4")
+
+
+def p_if_statement_expr_1(p):
+    """if_s_expr : IF expression KEY_O expression KEY_C"""
+    p[0] = [ConditionExpressionClause(p[2], [], p[4], Environment(None))]
+
+
+def p_if_statement_expr_2(p):
+    """if_s_expr : IF expression KEY_O instructions expression KEY_C"""
+    p[0] = [ConditionExpressionClause(p[2], p[4], p[5], Environment(None))]
+
+    # TODO uncomment
+    # a = global_config.generate_symbol_table(p[4], "Expr:IF" + global_config.random_hex_color_code())
+    # global_config.tmp_symbol_table = global_config.tmp_symbol_table + a
+
+
+def p_elseifs_r_expr(p):
+    """else_ifs_expr : else_ifs_expr else_if_expr"""
+    p[0] = p[1] + p[2]
+
+
+def p_elseifs_expr(p):
+    """else_ifs_expr :  else_if_expr"""
+    p[0] = p[1]
+
+
+def p_elseif_expr_1(p):
+    """else_if_expr : ELSE IF expression KEY_O expression KEY_C"""
+    p[0] = [ConditionExpressionClause(p[3], [], p[5], Environment(None))]
+
+
+def p_elseif_expr_2(p):
+    """else_if_expr : ELSE IF expression KEY_O instructions expression KEY_C"""
+    p[0] = [ConditionExpressionClause(p[3], p[5], p[6], Environment(None))]
+
+    # TODO uncomment
+    # a = global_config.generate_symbol_table(p[5], "Expr:ELSE-IF" + global_config.random_hex_color_code())
+    # global_config.tmp_symbol_table = global_config.tmp_symbol_table + a
+
+
+def p_else_expr_1(p):
+    """else_s_expr : ELSE KEY_O expression KEY_C"""
+    p[0] = [ConditionExpressionClause(None, [], p[3], Environment(None))]
+
+
+def p_else_expr_2(p):
+    """else_s_expr : ELSE KEY_O instructions expression KEY_C"""
+    p[0] = [ConditionExpressionClause(None, p[3], p[4], Environment(None))]
+
+    # TODO uncomment
+    # a = global_config.generate_symbol_table(p[3], "Expr:ELSE" + global_config.random_hex_color_code())
+    # global_config.tmp_symbol_table = global_config.tmp_symbol_table + a
+
 
 
 # Will this break the parser?
@@ -653,6 +793,12 @@ def p_epsilon(p):
 
 
 def p_error(p):
+
+    if p is None:
+        reason = f'Token faltante??'
+        global_config.log_syntactic_error(reason, -1, -1)
+        raise SyntacticError(reason, -1, -1)
+
     reason = f'Token <{p.value}> inesperado'
     global_config.log_syntactic_error(reason, p.lineno, -1)
 

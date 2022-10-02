@@ -89,8 +89,9 @@ class ArrayReference(Expression):
 
         generator.add_expression(p, p, dimensions[len(dimensions) - 1], "+")
 
+        p_deepness = environment.get_variable_p_deepness(self.variable_id, 0)
         stack_value = generator.new_temp()
-        generator.add_expression(stack_value, "P", the_symbol.heap_position, "+")
+        generator.add_expression(stack_value, "P", str(0 - p_deepness), "+")
 
         base_heap_address = generator.new_temp()
         generator.add_get_stack(base_heap_address, stack_value)

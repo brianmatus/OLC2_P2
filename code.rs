@@ -1,16 +1,29 @@
-fn main() {
-    let mut placa_: &str = "default";
+fn change_first(x:i64, arr : &mut [[f64]]) {
 
-    let mut x = 2002;
-    match x {
-        // 1 | 2 | 3 estas son coincidencias
-        2000 | 2001 | 2002 => {
-            placa_ = "Caso1";
-        }
-        2003 | 2004 | 2005 => placa_ = "Caso2",
-        2006 =>  placa_ = "Caso3",
-        _ => println!("Caso Default")
+    println!("arr:{:?}",arr);
+
+
+    if x > 400 {
+        println!("x>400");
     }
+    println!("x<=400");
 
-    println!("placa:{}", placa_);
+
 }
+
+
+fn main() {
+
+    let mut z = 22;
+
+    //let mut xd : [[f64;3];1] = [[1.1,2.2,3.3]];
+
+    let p = 10;
+
+    //println!("xd:{:?}",arr);
+    //change_first(420, &mut xd);
+    change_first(420, &mut [[1.1,2.2,3.3]]);
+
+}
+
+//TODO add random args before arr to check for correct P reverse by ref

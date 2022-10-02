@@ -43,7 +43,6 @@ class VariableReference(Expression):
             generator.add_comment("var_ref::Calculated offset internally")
             # TODO check if this is correct lol
             p_deepness = environment.get_variable_p_deepness(self.variable_id, 0)
-
             ref_position = generator.new_temp()
             generator.add_expression(ref_position, "P", str(0-p_deepness), "+")
 

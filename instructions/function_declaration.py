@@ -8,7 +8,7 @@ from elements.c_env import Environment, TransferType
 from elements.id_tuple import IDTuple
 
 from errors.semantic_error import SemanticError
-from global_config import log_semantic_error, function_list
+from global_config import log_semantic_error, log_syntactic_error, function_list
 from generator import Generator
 
 
@@ -47,8 +47,18 @@ class FunctionDeclaration(Instruction):
 
         for param in self.params:
             if param.expression_type == ExpressionType.ARRAY:
-                self.environment.save_variable_array(param.variable_id, param.expression_type, param.dimensions,
-                                                     param.is_mutable, True, self.line, self.column)
+
+                self.environment.save_variable_array(variable_id=param.variable_id,
+                                                     content_type=param.content_type,
+                                                     dimensions=param.dimensions,
+                                                     is_mutable=param.is_mutable,
+                                                     is_init=True, line=self.line,
+                                                     column=self.column)
+                # No dimensions specified, need to set them in stack. This values are set by every func call
+                if param.dimensions[1] is None:
+                    for _ in param.dimensions.keys():
+                        self.environment.size += 1
+
             # TODO check for vector
             # Any other normal expression:
             else:
@@ -79,6 +89,12 @@ class FunctionDeclaration(Instruction):
         self.environment.transfer_control = TransferInstruction(TransferType.RETURN, exit_label)
         final_generator.add_comment(f"-----{self.function_id} Instructions-----")
         for instruction in self.instructions:
+
+            if isinstance(instruction, FunctionDeclaration):
+                error_msg = f"}} faltante para función"
+                log_syntactic_error(error_msg, self.line, self.column)
+                raise SemanticError(error_msg, self.line, self.column)
+
             a = instruction.execute(self.environment)
             final_generator.combine_with(a.generator)
 

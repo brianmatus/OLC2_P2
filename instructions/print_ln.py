@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union
 
 
 from errors.semantic_error import SemanticError
@@ -9,6 +9,12 @@ from element_types.c_expression_type import ExpressionType
 from elements.c_env import Environment
 from abstract.expression import Expression
 from elements.value_tuple import ValueTuple
+
+from expressions.array_reference import ArrayReference
+from expressions.variable_ref import VariableReference
+from expressions.array_expression import ArrayExpression
+from elements.c_env import ArraySymbol
+
 from generator import Generator
 
 
@@ -82,10 +88,24 @@ class PrintLN(Instruction):
 
                 body_generator: Generator = Generator()
                 first = True
+
+                offset_for_none = 0  # for arrays without size, need to get it from array_stack_pos + n for n->n-dim
+
+                dims = []
+                if backwards_dimensions[0] is None:
+                    # TODO reverse needed?
+                    dims = get_dimensions_for_passed_non_fixed_array(generator, arg, env)[::-1]
+
                 for dim in backwards_dimensions:
+                    dim = str(dim)
                     t_max = generator.new_temp()
                     generator.add_comment("t_max = dim")
-                    generator.add_expression(t_max, str(dim), "", "")
+                    if dim == "None":
+                        generator.add_comment("non-set size, gathering from stack")
+                        dim = dims[offset_for_none]
+                        offset_for_none += 1
+
+                    generator.add_expression(t_max, dim, "", "")
                     if first:
                         body_generator = traverse_loop_for_print(body_generator, the_arg, ptr, t_max, True)
                         first = False
@@ -132,6 +152,32 @@ class PrintLN(Instruction):
 
         return ExecReturn(generator=generator,
                           propagate_break=False, propagate_continue=False, propagate_method_return=False)
+
+
+def get_dimensions_for_passed_non_fixed_array(generator: Generator,
+                                              arg: Union[ArrayReference, VariableReference,ArrayExpression],
+                                              environment: Environment) -> list:
+
+    if type(arg) in [ArrayReference, VariableReference]:
+        generator.add_comment("##################non-fixed-array-set##################")
+        the_symbol: ArraySymbol = environment.get_variable(arg.variable_id)
+
+        dims = []
+
+        p_deepness = environment.get_variable_p_deepness(arg.variable_id, 0)
+        stack_value = generator.new_temp()
+        generator.add_expression(stack_value, "P", str(0 - p_deepness), "+")
+
+        for i in range(len(the_symbol.dimensions.keys())):
+            t_dim = generator.new_temp()
+            dims.append(t_dim)
+            generator.add_expression(t_dim, stack_value, str(i+1), "+")
+            generator.add_get_stack(t_dim, t_dim)
+
+        return dims
+
+    if isinstance(arg, ArrayExpression):
+        print("println.py::to be implemented")
 
 
 def traverse_loop_for_print(generator: Generator, the_arg: ValueTuple, ptr: str, t_max: str,

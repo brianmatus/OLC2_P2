@@ -1,31 +1,24 @@
-environment transfer inst should be a queue (maybe even make it static in global_config)
-encode file as utf-8? only literals? python 3 already handles utf-8? idk man im tired
+check for correct transfer place in corresponding instructions (non have been implemented yet, return should be the first one)
 
-Will I do this? idk xd
+function-arg-arrays with no defined size make a huuuuge problem
+|--> stack_base + n for every nth-dimension of it. if func declaration detects empty dimension, set value to this one.
+     For this, manual increment of environment is necessary.
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------------------Will I do this? idk xd------------------------
+
+encode file as utf-8? only literals? python 3 already handles utf-8? idk man im tired
 Check for arrays passed to func calls
 Check for vectors passed to func calls
 Check for function return type
-
-
-
-
-
-
-
-0  ----First P [total size=5]
-5
-33
-22 , relative size=3
-11  
-
-3  ---Second p [total size= 3]
-4
-5 
-
-
-5 --Third p
-4
-
-
-
-

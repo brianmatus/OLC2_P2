@@ -126,11 +126,13 @@ class Environment:
 
         return self.parent_environment.get_variable(_id)
 
+    # TODO case for same env is correct?
     def get_variable_p_deepness(self, _id: str, r) -> int:
         t: ArraySymbol = self.symbol_table.get(_id)
         if t is not None:
             if r == 0:
-                return 0-t.heap_position
+                return 0-t.heap_position  # TODO check if correct???
+                # return t.heap_position  # TODO check if correct???
             return r - t.heap_position
 
         # hit top

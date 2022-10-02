@@ -100,6 +100,32 @@ main_environment = None  # Type Environment. Due to circular import this is set 
 #     return table
 
 
+def array_type_to_dimension_dict_and_type(arr_type) -> Tuple[dict, ExpressionType]:
+
+    from element_types.array_def_type import ArrayDefType
+    from elements.c_env import Environment
+    dic = {}
+    i = 1
+    tmp: ArrayDefType = arr_type
+
+    while True:
+        if isinstance(tmp.content_type, ArrayDefType):
+            # FIXME Because of env, should happened at runtime? It's safe cause always literal?
+            dic[i] = tmp.size_expr.execute(Environment(None)).value
+            i += 1
+            tmp = tmp.content_type
+            continue
+
+        dic[i] = tmp.size_expr.execute(Environment(None)).value
+
+        dic["embedded_type"] = tmp.content_type  # For backwards compatibility
+        return dic, tmp.content_type
+
+    # print("aqui la wea")
+    # print(arr_type)
+    return ExpressionType.VOID, {}
+
+
 def extract_dimensions_to_dict(arr) -> dict:
     if not isinstance(arr, list):  # Same deepness, so no array
         return {}
