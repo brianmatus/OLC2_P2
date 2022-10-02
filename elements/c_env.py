@@ -1,4 +1,4 @@
-from typing import Union, List
+from typing import Union, List, Tuple
 
 import global_config
 
@@ -66,13 +66,15 @@ class TransferInstruction:
 
 
 class Environment:
-    def __init__(self, parent_environment):
+    def __init__(self, parent_environment, return_type: ExpressionType = ExpressionType.VOID):
 
         self.parent_environment: Environment = parent_environment  # TODO weak ref?
         self.symbol_table: dict = {}
         self.size = 0
         self.children_environment = []
+
         self.transfer_control: TransferInstruction = TransferInstruction(TransferType.DEFAULT_INVALID, "invalid_jump")
+        self.return_type: ExpressionType = return_type
 
         if self.parent_environment is not None:
             pass
@@ -179,6 +181,19 @@ class Environment:
         the_symbol.is_init = True
 
         return the_symbol
+
+    def get_transfer_control_label(self, transfer_type: TransferType, line: int, column: int)\
+            -> Tuple[str, ExpressionType]:
+        if self.transfer_control.transfer_type == transfer_type:
+            return self.transfer_control.label_to_jump, self.return_type
+
+        # hit top
+        if self.parent_environment is None:
+            error_msg = f'Instrucción {transfer_type.name} colocada erróneamente'
+            global_config.log_semantic_error(error_msg, line, column)
+            raise SemanticError(error_msg, line, column)
+
+        return self.parent_environment.get_transfer_control_label(transfer_type, line, column)
 
     def remove_child(self, child):  # child: Environment
         self.children_environment = list(filter(lambda p: p is not child, self.children_environment))

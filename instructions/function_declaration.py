@@ -6,6 +6,7 @@ from abstract.instruction import Instruction
 from element_types.c_expression_type import ExpressionType
 from elements.c_env import Environment, TransferType
 from elements.id_tuple import IDTuple
+from element_types.array_def_type import ArrayDefType
 
 from errors.semantic_error import SemanticError
 from global_config import log_semantic_error, log_syntactic_error, function_list
@@ -19,7 +20,19 @@ class FunctionDeclaration(Instruction):
         super().__init__(line, column)
         self.function_id: str = function_id
         self.params: List[IDTuple] = params
+
         self.return_type: ExpressionType = return_type
+        self.return_content_type: ExpressionType = return_type
+        self.return_capacity = None
+        self.return_true_label = []
+        self.return_false_label = []
+        if isinstance(return_type, ArrayDefType):
+
+            dims, t = global_config.array_type_to_dimension_dict_and_type(return_type)
+            self.return_type = ExpressionType.ARRAY
+            self.return_content_type = t
+            self.return_capacity = dims
+
         self.instructions: List[Instruction] = instructions
         self.environment: Union[Environment, None] = None
 
@@ -87,6 +100,8 @@ class FunctionDeclaration(Instruction):
         exit_label = final_generator.new_label()
         from elements.c_env import TransferInstruction
         self.environment.transfer_control = TransferInstruction(TransferType.RETURN, exit_label)
+
+        self.environment.return_type = self.return_type
         final_generator.add_comment(f"-----{self.function_id} Instructions-----")
         for instruction in self.instructions:
 

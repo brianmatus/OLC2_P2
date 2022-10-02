@@ -149,6 +149,8 @@ class FunctionCallI(Instruction):
         final_generator.add_label([self.comeback_label])
         final_generator.add_comment("-----Revert P for a previous environment-----")
         final_generator.add_expression("P", "P", env.size, "-")
+        final_generator.add_comment("-----Revert func_has_returned-----")
+        final_generator.add_expression("t2", "0", "", "")
         return ExecReturn(final_generator, False, False, False)
 
 
@@ -171,5 +173,5 @@ def func_call_custom_array_expr(the_array_expr, env: Environment) -> Tuple[Gener
         generator.add_set_heap("H", val)
         generator.add_next_heap()
 
-    return generator,t
+    return generator, t
 

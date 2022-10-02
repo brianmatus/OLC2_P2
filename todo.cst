@@ -5,7 +5,8 @@ function-arg-arrays with no defined size make a huuuuge problem
      For this, manual increment of environment is necessary.
 
 
-
+reset t2 (func_has_returned) to 0 after catching the value
+return of booleans? idk
 
 
 

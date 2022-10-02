@@ -150,7 +150,7 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
             a = instruction.execute(global_config.main_environment)
             final_generator.combine_with(a.generator)
             if a.propagate_continue or a.propagate_break:
-                error_msg = f"break/continue colocado erroneamente"
+                error_msg = f"break/continue colocado erróneamente"
                 global_config.log_semantic_error(error_msg, instruction.line, instruction.column)
                 raise SemanticError(error_msg, instruction.line, instruction.column)
 
