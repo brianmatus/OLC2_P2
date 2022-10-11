@@ -32,6 +32,7 @@ from instructions.return_i import ReturnI
 from element_types.arithmetic_type import ArithmeticType
 from element_types.logic_type import LogicType
 from expressions.literal import Literal
+from expressions.type_casting import TypeCasting
 from expressions.arithmetic import Arithmetic
 from expressions.logic import Logic
 from expressions.array_expression import ArrayExpression
@@ -40,7 +41,7 @@ from expressions.array_reference import ArrayReference
 from expressions.conditional_expression import ConditionalExpression
 from expressions.match_expression import MatchExpression
 from expressions.func_call_expression import FunctionCallE
-
+from expressions.parameter_function_call import ParameterFunctionCallE
 
 tokens = lexer.tokens
 
@@ -57,12 +58,12 @@ precedence = (
     ('nonassoc', 'OPE_EQUAL', 'OPE_NEQUAL', 'OPE_LESS', 'OPE_MORE', 'OPE_LESS_EQUAL', 'OPE_MORE_EQUAL'),
     ('left', 'SUB', 'SUM'),
     ('left', 'MULT', 'DIV', 'MOD'),
-    # ('left', 'AS'),
+    ('left', 'AS'),
     ('nonassoc', 'UMINUS', "LOGIC_NOT"),  # nonassoc according to rust, i think 'right'
     ('nonassoc', 'PREC_VAR_REF'),
-    # ('nonassoc', 'DOT'),
+    ('nonassoc', 'DOT'),
     ('nonassoc', 'PREC_FUNC_CALL'),
-    # ('nonassoc', 'PREC_METHOD_CALL'),
+    ('nonassoc', 'PREC_METHOD_CALL'),
     ('nonassoc', 'PREC_ARRAY_REF')
 
 )
@@ -540,7 +541,24 @@ def p_variable_type_string(p):
 #######################################################################################################################
 #######################################################################################################################
 
-# ############################################MATCH CLAUSES AS EXPR (NEEDS TESTING)#####################################
+# #############################################PARAMETER FUNC CALL######################################################
+def p_parameter_func_call(p):
+    """expression : ID DOT ID PARENTH_O func_call_args PARENTH_C %prec PREC_METHOD_CALL"""
+    p[0] = ParameterFunctionCallE(p[1], p[3], p[5], p.lineno(1), -1)
+
+
+def p_parameter_func_call_array_ref(p):
+    """expression : expression DOT ID PARENTH_O func_call_args PARENTH_C %prec PREC_METHOD_CALL"""
+    p[0] = ParameterFunctionCallE(p[1], p[3], p[5], p.lineno(2), -1)
+
+
+# ###################################################TYPE CASTING#######################################################
+def p_casting(p):
+    """expression : expression AS variable_type"""
+    p[0] = TypeCasting(p[3], p[1], p.lineno(2), -1)
+
+
+# ###############################################FUNC CALL AS EXPRESSION################################################
 def p_function_call_e(p):
     """expression : ID PARENTH_O func_call_args PARENTH_C %prec PREC_FUNC_CALL"""
     p[0] = FunctionCallE(p[1], p[3], p.lineno(1), -1)

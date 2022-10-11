@@ -123,6 +123,9 @@ class Generator:
     def add_expression(self, target: str, left: str, right: str, operator: str):
         self.code.append(f'{target} = {left} {operator} {right};')
 
+    def add_casting(self, target: str, to_be_casted: str, cast_to: str):
+        self.code.append(f'{target} = ({cast_to}) {to_be_casted};')
+
     # if
     def add_if(self, left: str, right: str, operator: str, label: str):
         self.code.append(f"if ({left} {operator} {right} ) goto {label};")

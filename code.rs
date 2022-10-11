@@ -1,14 +1,23 @@
-fn change_first(counter: i64) -> i64 {
-    println!("ola k ase, retornando o k ase");
-    return counter*2;
+fn equisde(xd : &mut[[i64]]) {
+    println!("size:{}", xd[0].len());
 }
 
 
+
 fn main() {
-    let mut i = 0;
-    println!("r:{}", change_first(i));
-    i = i + 1;
-    println!("r:{}", change_first(i));
+    let mut x = [[1,2,3],[4,5,6]];
+    equisde(&mut x);
+
+
+    //let mut the_string = "xddd";
+    //let mut string = 5959.to_string();
+    //println!("string:{}", string);
+
+
+    //let mut size : i64 = x[0].to_string();
+    //println!("arr:{:?}", [["1", "2"],["3","4"]]);
+    //ola(&mut[["1","2"],["3","4"]]);
+
 }
 
 //TODO add random args before arr to check for correct P reverse by ref

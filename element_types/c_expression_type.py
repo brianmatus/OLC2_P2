@@ -1,6 +1,6 @@
 from enum import Enum
 
-ExpressionType = Enum('ElementType',
+ExpressionType = Enum('ExpressionType',
                       ' '.join([
                           # 'VOID',  # necessary? idk
                           'INT',

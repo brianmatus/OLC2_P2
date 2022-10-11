@@ -258,5 +258,20 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
         #                    global_config.generate_symbol_table(instruction_set, "Main")]
 
 
+def newtons_method_sqrt(x, x0):
+    tol = 1/100000000
+    root_approx = x0
+    y_n = x0 * x0 - x
+    dy_n = 2*x0
+    while -tol >= y_n or y_n >= tol:
+        root_approx = root_approx - y_n/dy_n
+        y_n = root_approx * root_approx - x
+        dy_n = 2*x0
+    return root_approx
+
+
 if __name__ == '__main__':
     start()
+
+    # x = 38
+    # print(newtons_method_sqrt(x, x / 2))

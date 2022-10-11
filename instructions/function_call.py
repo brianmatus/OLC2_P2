@@ -99,7 +99,7 @@ class FunctionCallI(Instruction):
                 if isinstance(self.params[i].expr, ArrayExpression):
                     if not global_config.match_array_type(param.content_type, given.value):
                         error_msg = f"La función {self.function_id} fue llamada con un tipo incorrecto de argumento. " \
-                                    f"Arg #{i + 1}" \
+                                    f"Arg #{i + 1} Array "\
                                     f"({param.content_type.name} <-> {given.content_type.name})"
                         log_semantic_error(error_msg, self.line, self.column)
                         raise SemanticError(error_msg, self.line, self.column)

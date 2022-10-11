@@ -104,7 +104,7 @@ class ArrayDeclaration(Instruction):
         if self.array_type is None:
             dimensions = global_config.extract_dimensions_to_dict(self.expression.value)
             tmp = self.expression
-            while isinstance(tmp.value, list):
+            while isinstance(tmp, ArrayExpression) and isinstance(tmp.value, list):
                 tmp = tmp.value[0]
             the_type = tmp.expression_type
 

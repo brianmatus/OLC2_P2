@@ -14,9 +14,14 @@ class Literal(Expression):
 
     def execute(self, environment: Environment) -> ValueTuple:
 
-        if self.expression_type in [ExpressionType.INT, ExpressionType.FLOAT, ExpressionType.CHAR]:
+        if self.expression_type in [ExpressionType.INT, ExpressionType.FLOAT]:
 
             return ValueTuple(value=self.value, expression_type=self.expression_type, is_mutable=False,
+                              content_type=self.expression_type, capacity=None, is_tmp=False, generator=Generator(),
+                              true_label=[], false_label=[])
+
+        if self.expression_type == ExpressionType.CHAR:
+            return ValueTuple(value=str(ord(self.value)), expression_type=self.expression_type, is_mutable=False,
                               content_type=self.expression_type, capacity=None, is_tmp=False, generator=Generator(),
                               true_label=[], false_label=[])
 

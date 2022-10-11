@@ -57,6 +57,32 @@ class PrintLN(Instruction):
             if the_arg.content_type != ExpressionType.BOOL:
                 generator.combine_with(the_arg.generator)
 
+            if isinstance(arg, ArrayExpression):
+                the_arg.capacity = list(global_config.extract_dimensions_to_dict(the_arg.value).values())
+                flat_array = global_config.flatten_array(arg.value)
+                the_arg.content_type = flat_array[0].expression_type
+
+                generator = the_arg.generator
+                generator.add_comment(f"-------------------------------println::direct reference of array"
+                                      f"-------------------------------")
+
+                # First do all stuff in heap, then get those values/references and make array out of it
+                # Why not set values while making it? Because of pointers.
+                # String for example would make array heap location not continuous. This avoids that problem.
+                values = []
+                for expr in flat_array:
+                    r = expr.execute(env)
+                    generator.combine_with(r.generator)
+                    values.append(str(r.value))
+
+                t = generator.new_temp()
+                generator.add_expression(t, "H", "", "")
+                the_arg.value = t  # idk? xD
+
+                for val in values:
+                    generator.add_set_heap("H", val)
+                    generator.add_next_heap()
+
             i1 = the_str.find("{}")  # -1
             i2 = the_str.find("{:?}")  # 4
             next_is_simple = ((i1 < i2) or (i2 == -1)) and (i1 != -1)
@@ -93,8 +119,10 @@ class PrintLN(Instruction):
 
                 dims = []
                 if backwards_dimensions[0] is None:
-                    # TODO reverse needed?
-                    dims = get_dimensions_for_passed_non_fixed_array(generator, arg, env)[::-1]
+                    if isinstance(arg, ArrayExpression):
+                        dims = list(global_config.extract_dimensions_to_dict(the_arg.value).values())
+                    else:
+                        dims = get_dimensions_for_passed_non_fixed_array(generator, arg, env)[::-1]
 
                 for dim in backwards_dimensions:
                     dim = str(dim)
@@ -176,8 +204,9 @@ def get_dimensions_for_passed_non_fixed_array(generator: Generator,
 
         return dims
 
-    if isinstance(arg, ArrayExpression):
-        print("println.py::to be implemented")
+    # if isinstance(arg, list):  # Derived of ArrayExpresion
+    #     pass
+    #     # TODO to be implemented
 
 
 def traverse_loop_for_print(generator: Generator, the_arg: ValueTuple, ptr: str, t_max: str,

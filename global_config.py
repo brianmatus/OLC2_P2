@@ -8,6 +8,7 @@ from abstract.expression import Expression
 from errors.lexic_error import LexicError
 from errors.semantic_error import SemanticError
 from errors.syntactic_error import SyntacticError
+from expressions.array_expression import ArrayExpression
 
 # from elements.value_tuple import ValueTuple
 lexic_error_list: List[LexicError] = []
@@ -133,11 +134,15 @@ def extract_dimensions_to_dict(arr) -> dict:
     i = 1
     layer = arr
     while True:
-        if isinstance(layer[0].value, list):
+        from expressions.array_expression import ArrayExpression
+        if isinstance(layer[0], ArrayExpression):
+            if isinstance(layer[0].value, list):
+                r[i] = len(layer)
+                layer = layer[0].value
+                i += 1
+                continue
             r[i] = len(layer)
-            layer = layer[0].value
-            i += 1
-            continue
+            break
         r[i] = len(layer)
         break
     return r
@@ -176,7 +181,14 @@ def match_dimensions(supposed: List, arr: List[Expression]) -> bool:
 
 def match_array_type(supposed: ExpressionType, arr: List[Expression]) -> bool:
 
-    if len(arr) == 0: #TODO this breaks array? idk
+    if len(arr) == 0:
+        return True
+
+    # TODO does this break all of things? idk
+    if not type(arr[0]) in [ArrayExpression]:
+        for item in arr:
+            if item.expression_type is not supposed:
+                return False
         return True
 
     if not isinstance(arr[0].value, list):  # Reached last array
@@ -198,6 +210,10 @@ def flatten_array(arr: List[Expression]) -> List[Expression]:
 
     if len(arr) == 0: #TODO this breaks array? idk
         return []
+
+
+    if not type(arr[0]) in [ArrayExpression]:
+        return arr
 
     if not isinstance(arr[0].value, list):  # Reached last array
         return arr

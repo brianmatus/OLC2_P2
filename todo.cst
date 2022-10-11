@@ -10,6 +10,14 @@ return of booleans? idk
 
 
 
+expresion instance of function call (or even println function) should not matter in how its handled by it.
+In a matter of fact, ArrayExpresion should be generating it's own generator code and not rely on the declaration
+to have its first approach to actual code execution. This flaw was introduced to thinking recursive ArrayExpr
+will interfeer with generation. But only most-outer player has it's execute method called. Maybe redo this?
+To late for it? idk
+
+
+
 
 
 

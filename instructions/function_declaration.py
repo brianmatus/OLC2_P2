@@ -8,6 +8,8 @@ from elements.c_env import Environment, TransferType
 from elements.id_tuple import IDTuple
 from element_types.array_def_type import ArrayDefType
 
+from expressions.array_expression import ArrayExpression
+
 from errors.semantic_error import SemanticError
 from global_config import log_semantic_error, log_syntactic_error, function_list
 from generator import Generator
@@ -71,6 +73,10 @@ class FunctionDeclaration(Instruction):
                 if param.dimensions[1] is None:
                     for _ in param.dimensions.keys():
                         self.environment.size += 1
+
+            elif isinstance(param, ArrayExpression):
+                pass
+
 
             # TODO check for vector
             # Any other normal expression:
