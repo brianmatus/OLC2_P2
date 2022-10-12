@@ -342,6 +342,13 @@ class ParameterFunctionCallE(Expression):
                     result.value = root_approx
                     return result
 
+            if self.function_id == "len":
+                if result.expression_type not in [ExpressionType.STRING_PRIMITIVE, ExpressionType.STRING_CLASS]:
+                    error_msg = f".len() primitivo solo es valido para cadenas de texto"
+                    log_semantic_error(error_msg, self.line, self.column)
+                    raise SemanticError(error_msg, self.line, self.column)
+                return self.value_len(self.variable_id, environment)
+
         elif isinstance(self.variable_id, Literal):
             if self.function_id == "to_string":
                 r = self.variable_id.execute(environment)
@@ -354,6 +361,11 @@ class ParameterFunctionCallE(Expression):
                 return new_lit.execute(environment)
 
             if self.function_id == "len":
+                if self.variable_id.expression_type not in\
+                        [ExpressionType.STRING_PRIMITIVE, ExpressionType.STRING_CLASS]:
+                    error_msg = f".len() primitivo solo es valido para cadenas de texto"
+                    log_semantic_error(error_msg, self.line, self.column)
+                    raise SemanticError(error_msg, self.line, self.column)
                 return self.value_len(self.variable_id, environment)
 
             if self.function_id == "sqrt":

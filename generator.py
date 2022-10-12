@@ -3,9 +3,9 @@ from typing import List
 
 debug_prints = True
 add_comments = True
-HEAP_SIZE = 900
+HEAP_SIZE = 1500
 HEAP_COUNTER = 0
-STACK_SIZE = 50
+STACK_SIZE = 100
 STACK_COUNTER = 0
 
 

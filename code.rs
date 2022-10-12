@@ -1,11 +1,16 @@
 
 
-fn main() {
-    let x:i64 = "xdd".len();
 
-    println!("x:{}", x);
+
+fn main() {
+
+
+
+    let mut y1 = "55".len();
+
+    println!("len:{}", y1);
+
 
 
 }
 
-//TODO add random args before arr to check for correct P reverse by ref
