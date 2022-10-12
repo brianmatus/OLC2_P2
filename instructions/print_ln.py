@@ -344,6 +344,15 @@ def generate_array_primitive_print(the_arg: ValueTuple, generator: Generator, pt
             generator.add_printf("i", f"(int){char}")
         case ExpressionType.FLOAT:
             generator.add_printf("f", char)
+        case ExpressionType.BOOL:
+            l_true = generator.new_label()
+            l_exit = generator.new_label()
+            generator.add_if(char, "1", "==", l_true)
+            generator.add_print_message("false")
+            generator.add_goto(l_exit)
+            generator.add_label([l_true])
+            generator.add_print_message("true")
+            generator.add_label([l_exit])
         case _:
             error_msg = f'generate_primitive_print::Array content type not detected, is this possible?'
             global_config.log_semantic_error(error_msg, -1, -1)

@@ -179,6 +179,18 @@ class ArrayReference(Expression):
         value = generator.new_temp()
         generator.add_get_heap(value, final_heap_address)
 
+        if the_symbol.symbol_type == ExpressionType.BOOL:
+            l_true = generator.new_label()
+            l_false = generator.new_label()
+            generator.add_if(value, "1", "==", l_true)
+            generator.add_goto(l_false)
+            return ValueTuple(value=value, expression_type=the_symbol.symbol_type, is_mutable=False,
+                              generator=generator,
+                              content_type=the_symbol.symbol_type, capacity=None, is_tmp=True,
+                              true_label=[l_true], false_label=[l_false])
+
+
+
 
         # TODO will this break? idk, uncomment?
         # t = generator.new_temp()

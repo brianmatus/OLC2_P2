@@ -15,7 +15,6 @@ from expressions.variable_ref import VariableReference
 from expressions.literal import Literal
 from expressions.array_expression import ArrayExpression
 from expressions.type_casting import TypeCasting
-import copy
 
 from element_types.logic_type import LogicType
 from global_config import log_semantic_error
@@ -44,25 +43,26 @@ class ParameterFunctionCallE(Expression):
         if isinstance(self.variable_id, str):
             self.variable_id = VariableReference(self.variable_id, self.line, self.column)
 
+        # ##############################################################################################################
+
         if isinstance(self.variable_id, ArrayReference):
 
             result = self.variable_id.execute(environment)
             if result.expression_type == ExpressionType.ARRAY:
                 if self.function_id == "to_string":
-                    generator = Generator()
-                    generator.add_comment(
+                    gen = Generator()
+                    gen.add_comment(
                         f"-------------------------------Parameter Func Call::to_string for array"
                         f"-------------------------------")
-                    generator.combine_with(result.generator)
-                    # TODO to be implemented
-                    generator.add_comment("---Pointer for value")
-                    ptr = generator.new_temp()
-                    generator.add_expression(ptr, result.value, "", "")
+                    gen.combine_with(result.generator)
+                    gen.add_comment("---Pointer for value")
+                    ptr = gen.new_temp()
+                    gen.add_expression(ptr, result.value, "", "")
 
                     backwards_dimensions = result.capacity[::-1]
 
-                    string_result = generator.new_temp()
-                    generator.add_expression(string_result, "H", "", "")
+                    string_result = gen.new_temp()
+                    gen.add_expression(string_result, "H", "", "")
 
                     body_generator: Generator = Generator()
 
@@ -73,30 +73,30 @@ class ParameterFunctionCallE(Expression):
                     dims = []
                     if backwards_dimensions[0] is None:
                         # TODO reverse needed?
-                        dims = get_dimensions_for_passed_non_fixed_array(generator, self.variable_id, environment)[::-1]
+                        dims = get_dimensions_for_passed_non_fixed_array(gen, self.variable_id, environment)[::-1]
 
                     for dim in backwards_dimensions:
                         dim = str(dim)
-                        t_max = generator.new_temp()
-                        generator.add_comment("t_max = dim")
+                        t_max = gen.new_temp()
+                        gen.add_comment("t_max = dim")
                         if dim == "None":
-                            generator.add_comment("non-set size, gathering from stack")
+                            gen.add_comment("non-set size, gathering from stack")
                             dim = dims[offset_for_none]
                             offset_for_none += 1
 
-                        generator.add_expression(t_max, dim, "", "")
+                        gen.add_expression(t_max, dim, "", "")
                         if first:
                             body_generator = traverse_loop_for_stringify(body_generator, result, ptr, t_max, True)
                             first = False
                             continue
                         body_generator = traverse_loop_for_stringify(body_generator, result, ptr, t_max, False)
 
-                    generator.add_comment("---Print:Array traverse")
-                    generator.combine_with(body_generator)
-                    generator.add_set_heap("H", "-1")
-                    generator.add_next_heap()
+                    gen.add_comment("---Print:Array traverse")
+                    gen.combine_with(body_generator)
+                    gen.add_set_heap("H", "-1")
+                    gen.add_next_heap()
                     return ValueTuple(value=string_result, expression_type=ExpressionType.STRING_CLASS, is_mutable=True,
-                                      generator=generator, content_type=ExpressionType.STRING_CLASS, capacity=None,
+                                      generator=gen, content_type=ExpressionType.STRING_CLASS, capacity=None,
                                       is_tmp=True, true_label=[], false_label=[])
 
                 if self.function_id == "len":
@@ -131,8 +131,70 @@ class ParameterFunctionCallE(Expression):
                 result.expression_type = ExpressionType.STRING_CLASS
                 result.generator.add_set_heap("H", "-1")
                 result.generator.add_next_heap()
+                return result
 
-        elif isinstance(self.variable_id, VariableReference):
+            if self.function_id == "abs":
+                if result.expression_type in [ExpressionType.INT, ExpressionType.FLOAT]:
+                    t_abs = result.generator.new_temp()
+                    l_positive = result.generator.new_label()
+                    l_exit = result.generator.new_label()
+                    result.generator.add_if(result.value, "0", ">=", l_positive)
+                    result.generator.add_expression(t_abs, "0", result.value, "-")
+                    result.generator.add_goto(l_exit)
+                    result.generator.add_label([l_positive])
+                    result.generator.add_expression(t_abs, result.value, "", "")
+                    result.generator.add_label([l_exit])
+                    result.value = t_abs
+                    return result
+
+            if self.function_id == "sqrt":
+                if result.expression_type == ExpressionType.FLOAT:
+                    gen: Generator = result.generator
+                    x = result.value
+                    tol = gen.new_temp()
+                    x0 = gen.new_temp()
+                    root_approx = gen.new_temp()
+                    y_n = gen.new_temp()
+                    dy_n = gen.new_temp()
+                    tol_neg = gen.new_temp()
+                    the_div = gen.new_temp()
+
+                    l_while_loop = gen.new_label()
+                    l_continue = gen.new_label()
+                    l_stop = gen.new_label()
+
+                    gen.add_expression(tol, "1.0", "1000000000000", "/")
+                    gen.add_expression(x0, x, "2.0", "/")
+
+                    gen.add_expression(root_approx, x0, "", "")
+                    gen.add_expression(y_n, x0, x0, "*")
+                    gen.add_expression(y_n, y_n, x, "-")
+
+                    gen.add_expression(dy_n, "2", x0, "*")
+
+                    gen.add_label([l_while_loop])
+                    gen.add_expression(tol_neg, "0.0", tol, "-")
+                    gen.add_if(tol_neg, y_n, ">=", l_continue)
+                    gen.add_if(y_n, tol, ">=", l_continue)
+                    gen.add_goto(l_stop)
+
+                    gen.add_label([l_continue])
+                    gen.add_expression(the_div, y_n, dy_n, "/")
+                    gen.add_expression(root_approx, root_approx, the_div, "-")
+
+                    gen.add_expression(y_n, root_approx, root_approx, "*")
+                    gen.add_expression(y_n, y_n, x, "-")
+                    gen.add_expression(dy_n, "2.0", x0, "*")
+                    gen.add_goto(l_while_loop)
+
+                    gen.add_label([l_stop])
+                    gen.add_expression(root_approx, root_approx, "10000000", "*")
+                    gen.add_casting(root_approx, root_approx, "int")
+                    gen.add_expression(root_approx, root_approx, "10000000", "/")
+                    result.value = root_approx
+                    return result
+
+        elif type(self.variable_id) in [VariableReference, TypeCasting]:
             result = self.variable_id.execute(environment)
             pass
 
@@ -141,16 +203,16 @@ class ParameterFunctionCallE(Expression):
 
             if result.expression_type == ExpressionType.ARRAY:
                 if self.function_id == "to_string":
-                    generator = Generator()
-                    generator.combine_with(result.generator)
-                    generator.add_comment("---Pointer for value")
-                    ptr = generator.new_temp()
-                    generator.add_expression(ptr, result.value, "", "")
+                    gen = Generator()
+                    gen.combine_with(result.generator)
+                    gen.add_comment("---Pointer for value")
+                    ptr = gen.new_temp()
+                    gen.add_expression(ptr, result.value, "", "")
 
                     backwards_dimensions = result.capacity[::-1]
 
-                    string_result = generator.new_temp()
-                    generator.add_expression(string_result, "H", "", "")
+                    string_result = gen.new_temp()
+                    gen.add_expression(string_result, "H", "", "")
 
                     body_generator: Generator = Generator()
 
@@ -161,30 +223,30 @@ class ParameterFunctionCallE(Expression):
                     dims = []
                     if backwards_dimensions[0] is None:
                         # TODO reverse needed?
-                        dims = get_dimensions_for_passed_non_fixed_array(generator, self.variable_id, environment)[::-1]
+                        dims = get_dimensions_for_passed_non_fixed_array(gen, self.variable_id, environment)[::-1]
 
                     for dim in backwards_dimensions:
                         dim = str(dim)
-                        t_max = generator.new_temp()
-                        generator.add_comment("t_max = dim")
+                        t_max = gen.new_temp()
+                        gen.add_comment("t_max = dim")
                         if dim == "None":
-                            generator.add_comment("non-set size, gathering from stack")
+                            gen.add_comment("non-set size, gathering from stack")
                             dim = dims[offset_for_none]
                             offset_for_none += 1
 
-                        generator.add_expression(t_max, dim, "", "")
+                        gen.add_expression(t_max, dim, "", "")
                         if first:
                             body_generator = traverse_loop_for_stringify(body_generator, result, ptr, t_max, True)
                             first = False
                             continue
                         body_generator = traverse_loop_for_stringify(body_generator, result, ptr, t_max, False)
 
-                    generator.add_comment("---Print:Array traverse")
-                    generator.combine_with(body_generator)
-                    generator.add_set_heap("H", "-1")
-                    generator.add_next_heap()
+                    gen.add_comment("---Print:Array traverse")
+                    gen.combine_with(body_generator)
+                    gen.add_set_heap("H", "-1")
+                    gen.add_next_heap()
                     return ValueTuple(value=string_result, expression_type=ExpressionType.STRING_CLASS, is_mutable=True,
-                                      generator=generator, content_type=ExpressionType.STRING_CLASS, capacity=None,
+                                      generator=gen, content_type=ExpressionType.STRING_CLASS, capacity=None,
                                       is_tmp=True, true_label=[], false_label=[])
 
                 if self.function_id == "len":
@@ -219,12 +281,73 @@ class ParameterFunctionCallE(Expression):
                 result.generator.add_next_heap()
                 return result
 
+            if self.function_id == "abs":
+                if result.expression_type in [ExpressionType.INT, ExpressionType.FLOAT]:
+                    t_abs = result.generator.new_temp()
+                    l_positive = result.generator.new_label()
+                    l_exit = result.generator.new_label()
+                    result.generator.add_if(result.value, "0", ">=", l_positive)
+                    result.generator.add_expression(t_abs, "0", result.value, "-")
+                    result.generator.add_goto(l_exit)
+                    result.generator.add_label([l_positive])
+                    result.generator.add_expression(t_abs, result.value, "", "")
+                    result.generator.add_label([l_exit])
+                    result.value = t_abs
+                    return result
+
+            if self.function_id == "sqrt":
+                if result.expression_type == ExpressionType.FLOAT:
+                    gen: Generator = result.generator
+                    x = result.value
+                    tol = gen.new_temp()
+                    x0 = gen.new_temp()
+                    root_approx = gen.new_temp()
+                    y_n = gen.new_temp()
+                    dy_n = gen.new_temp()
+                    tol_neg = gen.new_temp()
+                    the_div = gen.new_temp()
+
+                    l_while_loop = gen.new_label()
+                    l_continue = gen.new_label()
+                    l_stop = gen.new_label()
+
+                    gen.add_expression(tol, "1.0", "1000000000000", "/")
+                    gen.add_expression(x0, x, "2.0", "/")
+
+                    gen.add_expression(root_approx, x0, "", "")
+                    gen.add_expression(y_n, x0, x0, "*")
+                    gen.add_expression(y_n, y_n, x, "-")
+
+                    gen.add_expression(dy_n, "2", x0, "*")
+
+                    gen.add_label([l_while_loop])
+                    gen.add_expression(tol_neg, "0.0", tol, "-")
+                    gen.add_if(tol_neg, y_n, ">=", l_continue)
+                    gen.add_if(y_n, tol, ">=", l_continue)
+                    gen.add_goto(l_stop)
+
+                    gen.add_label([l_continue])
+                    gen.add_expression(the_div, y_n, dy_n, "/")
+                    gen.add_expression(root_approx, root_approx, the_div, "-")
+
+                    gen.add_expression(y_n, root_approx, root_approx, "*")
+                    gen.add_expression(y_n, y_n, x, "-")
+                    gen.add_expression(dy_n, "2.0", x0, "*")
+                    gen.add_goto(l_while_loop)
+
+                    gen.add_label([l_stop])
+                    gen.add_expression(root_approx, root_approx, "10000000", "*")
+                    gen.add_casting(root_approx, root_approx, "int")
+                    gen.add_expression(root_approx, root_approx, "10000000", "/")
+                    result.value = root_approx
+                    return result
 
         elif isinstance(self.variable_id, Literal):
             if self.function_id == "to_string":
                 r = self.variable_id.execute(environment)
 
                 if r.expression_type in [ExpressionType.STRING_PRIMITIVE, ExpressionType.STRING_CLASS]:
+                    r.expression_type = ExpressionType.STRING_CLASS
                     return r
 
                 new_lit = Literal(str(r.value), ExpressionType.STRING_CLASS, self.line, self.column)
@@ -233,19 +356,62 @@ class ParameterFunctionCallE(Expression):
             if self.function_id == "len":
                 return self.value_len(self.variable_id, environment)
 
+            if self.function_id == "sqrt":
+                result = self.variable_id.execute(environment)
+                if result.expression_type == ExpressionType.FLOAT:
+                    gen: Generator = result.generator
+                    x = result.value
+                    tol = gen.new_temp()
+                    x0 = gen.new_temp()
+                    root_approx = gen.new_temp()
+                    y_n = gen.new_temp()
+                    dy_n = gen.new_temp()
+                    tol_neg = gen.new_temp()
+                    the_div = gen.new_temp()
 
-            if self.function_id == "abs":
-                return self.value_abs(self.variable_id, environment)
+                    l_while_loop = gen.new_label()
+                    l_continue = gen.new_label()
+                    l_stop = gen.new_label()
 
-        elif isinstance(self.variable_id, TypeCasting):
-            r = self.variable_id.execute(environment)
-            the_symbol = Symbol("type_casting_forced_symbol", r._type, r.value, True, False)
+                    gen.add_expression(tol, "1.0", "1000000000000", "/")
+                    gen.add_expression(x0, x, "2.0", "/")
+
+                    gen.add_expression(root_approx, x0, "", "")
+                    gen.add_expression(y_n, x0, x0, "*")
+                    gen.add_expression(y_n, y_n, x, "-")
+
+                    gen.add_expression(dy_n, "2", x0, "*")
+
+                    gen.add_label([l_while_loop])
+                    gen.add_expression(tol_neg, "0.0", tol, "-")
+                    gen.add_if(tol_neg, y_n, ">=", l_continue)
+                    gen.add_if(y_n, tol, ">=", l_continue)
+                    gen.add_goto(l_stop)
+
+                    gen.add_label([l_continue])
+                    gen.add_expression(the_div, y_n, dy_n, "/")
+                    gen.add_expression(root_approx, root_approx, the_div, "-")
+
+                    gen.add_expression(y_n, root_approx, root_approx, "*")
+                    gen.add_expression(y_n, y_n, x, "-")
+                    gen.add_expression(dy_n, "2.0", x0, "*")
+                    gen.add_goto(l_while_loop)
+
+                    gen.add_label([l_stop])
+                    gen.add_expression(root_approx, root_approx, "10000000", "*")
+                    gen.add_casting(root_approx, root_approx, "int")
+                    gen.add_expression(root_approx, root_approx, "10000000", "/")
+                    result.value = root_approx
+                    return result
+
+        # elif isinstance(self.variable_id, TypeCasting):
+        #     r = self.variable_id.execute(environment)
+        #     the_symbol = Symbol("type_casting_forced_symbol", r._type, r.value, True, False)
 
         elif isinstance(self.variable_id, ParameterFunctionCallE):
             # FIXME check resulting function type
-            if self.function_id == "to_string":
-                r = self.variable_id.execute(environment)
-                return ValueTuple(str(r.value), ExpressionType.STRING_CLASS, False, None, None)
+            pass
+            print("PARAMETER FUNC CALL::ParameterFunctionCallE INSTANCE NOT IMPLEMENTED YET")
 
 
         # TODO Check if is struct
@@ -256,62 +422,6 @@ class ParameterFunctionCallE(Expression):
         error_msg = f"Acceso a parametro de variable invalido.."
         log_semantic_error(error_msg, self.line, self.column)
         raise SemanticError(error_msg, self.line, self.column)
-
-    def native_to_string(self, the_symbol) -> ValueTuple:
-        # allowed_types = [ElementType.INT, ElementType.USIZE, ElementType.FLOAT,
-        #                  ElementType.BOOL, ElementType.CHAR,
-        #                  ElementType.STRING_PRIMITIVE, ElementType.STRING_CLASS]
-        # if not the_symbol._type in allowed_types:
-        #     error_msg = f".to_string() solo puede ser usado con i64, usize, f64, bool, char, String, &str."
-        #     log_semantic_error(error_msg, self.line, self.column)
-        #     raise SemanticError(error_msg, self.line, self.column)
-        #
-        # return ValueTuple(str(the_symbol.value), ElementType.STRING_CLASS, False)
-        pass
-
-    def native_abs(self, the_symbol) -> ValueTuple:
-        # allowed_types = [ElementType.INT, ElementType.FLOAT]
-        # if not the_symbol._type in allowed_types:
-        #     error_msg = f".native_abs() solo puede ser usado con i64, f64."
-        #     log_semantic_error(error_msg, self.line, self.column)
-        #     raise SemanticError(error_msg, self.line, self.column)
-        #
-        # return ValueTuple(abs(the_symbol.value), the_symbol._type, False, None, None)
-        pass
-
-    def native_sqrt(self, the_symbol) -> ValueTuple:
-        # allowed_types = [ElementType.INT, ElementType.FLOAT]
-        # if not the_symbol._type in allowed_types:
-        #     error_msg = f".native_sqrt() solo puede ser usado con i64, f64."
-        #     log_semantic_error(error_msg, self.line, self.column)
-        #     raise SemanticError(error_msg, self.line, self.column)
-        #
-        # return ValueTuple(math.sqrt(the_symbol.value), ElementType.FLOAT, False, None, None)
-        pass
-
-    def native_clone(self, the_symbol) -> ValueTuple:
-        # allowed_types = [ElementType.INT, ElementType.USIZE, ElementType.FLOAT,
-        #                  ElementType.BOOL, ElementType.CHAR,
-        #                  ElementType.STRING_PRIMITIVE, ElementType.STRING_CLASS]
-        # if not the_symbol._type in allowed_types:
-        #     error_msg = f".native_sqrt() solo puede ser usado i64, usize, f64, bool, char, String, &str."
-        #     log_semantic_error(error_msg, self.line, self.column)
-        #     raise SemanticError(error_msg, self.line, self.column)
-        #
-        # return ValueTuple(the_symbol.value, the_symbol._type, False, None, None)
-        pass
-
-    def native_array_clone(self, the_symbol) -> ValueTuple:
-        # allowed_types = [ElementType.INT, ElementType.USIZE, ElementType.FLOAT,
-        #                  ElementType.BOOL, ElementType.CHAR,
-        #                  ElementType.STRING_PRIMITIVE, ElementType.STRING_CLASS]
-        # if not the_symbol._type in allowed_types:
-        #     error_msg = f".native_sqrt() solo puede ser usado i64, usize, f64, bool, char, String, &str."
-        #     log_semantic_error(error_msg, self.line, self.column)
-        #     raise SemanticError(error_msg, self.line, self.column)
-        #
-        # return ValueTuple(copy.deepcopy(the_symbol.value), the_symbol._type, False, None, None)
-        pass
 
     def native_len(self, the_symbol, env: Environment) -> ValueTuple:
         allowed_types = [ExpressionType.STRING_PRIMITIVE, ExpressionType.STRING_CLASS, ExpressionType.ARRAY]
@@ -361,11 +471,6 @@ class ParameterFunctionCallE(Expression):
                           content_type=ExpressionType.INT, capacity=None, is_tmp=True,
                           true_label=[], false_label=[])
         pass
-
-    def value_len(self, literal_expr, env: Environment) -> ValueTuple:
-        generator = Generator()
-        result = literal_expr.execute(env)
-        #  TODO finish implementing
 
     def value_len(self, literal_expr, env: Environment) -> ValueTuple:
         generator = Generator()

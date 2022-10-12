@@ -135,9 +135,8 @@ class Arithmetic(Expression):
                                       generator, ExpressionType.FLOAT, None, True, [], [])
 
                 # &str + String
-                # TODO change right to STRING_CLASS
                 a = left.expression_type == ExpressionType.STRING_PRIMITIVE \
-                    and right.expression_type == ExpressionType.STRING_PRIMITIVE
+                    and right.expression_type == ExpressionType.STRING_CLASS
                 # String + &str
                 b = left.expression_type == ExpressionType.STRING_CLASS \
                     and right.expression_type == ExpressionType.STRING_PRIMITIVE

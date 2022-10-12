@@ -195,6 +195,17 @@ class ArrayDeclaration(Instruction):
         for expr in flat_array:
             r = expr.execute(env)
             generator.combine_with(r.generator)
+            if r.expression_type == ExpressionType.BOOL:
+                t = generator.new_temp()
+                l_exit = generator.new_label()
+                generator.add_label(r.true_label)
+                generator.add_expression(t, "1", "", "")
+                generator.add_goto(l_exit)
+                generator.add_label(r.false_label)
+                generator.add_expression(t, "0", "", "")
+                generator.add_label([l_exit])
+                values.append(t)
+                continue
             values.append(str(r.value))
 
         t = generator.new_temp()
