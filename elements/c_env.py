@@ -18,8 +18,7 @@ from enum import Enum
 
 
 class Symbol:
-    def __init__(self, symbol_id: str, expression_type: ExpressionType, heap_position,
-                 is_init: bool, is_mutable: bool):
+    def __init__(self, symbol_id: str, expression_type: ExpressionType, heap_position, is_init: bool, is_mutable: bool):
         self.heap_position = heap_position
         self.symbol_id = symbol_id
         self.symbol_type = expression_type
@@ -39,15 +38,12 @@ class ArraySymbol:
 
 
 class VectorSymbol:
-    def __init__(self, symbol_id: str, vector_type: ExpressionType, deepness: int, heap_position,
-                 is_mutable: bool, capacity: List[int]):
+    def __init__(self, symbol_id: str, vector_type: ExpressionType, deepness: int, heap_position, is_mutable: bool):
         self.heap_position = heap_position
         self.symbol_id: str = symbol_id
         self.symbol_type: ExpressionType = vector_type
         self.is_mutable: bool = is_mutable
         self.deepness: int = deepness
-        # FIXME List[int] instead of int: for passing as reference to func (or other envs in general)
-        self.capacity: List[int] = capacity
 
 
 TransferType = Enum('ElementType',
@@ -112,6 +108,25 @@ class Environment:
 
         the_symbol = ArraySymbol(variable_id, content_type, dimensions, self.size,
                                  is_init, is_mutable)
+        self.symbol_table[variable_id] = the_symbol
+        self.size += 1
+
+        return the_symbol
+
+    def save_variable_vector(self, variable_id: str, content_type: ExpressionType, deepness, is_mutable: bool,
+                             line: int, column: int):
+
+        the_symbol: Union[VectorSymbol, None] = self.symbol_table.get(variable_id)
+
+        if the_symbol is not None:
+            error_msg = f'Variable <{variable_id}> ya esta definida en el ámbito actual. ' \
+                        f'ALLOW_NESTED_VARIABLE_OVERRIDE =' \
+                        f'{global_config.ALLOW_NESTED_VARIABLE_OVERRIDE}>'
+
+            global_config.log_semantic_error(error_msg, line, column)
+            raise SemanticError(error_msg, line, column)
+
+        the_symbol = VectorSymbol(variable_id, content_type, deepness, self.size, is_mutable)
         self.symbol_table[variable_id] = the_symbol
         self.size += 1
 

@@ -13,6 +13,7 @@ from elements.c_env import Environment
 from elements.id_tuple import IDTuple
 from element_types.array_def_type import ArrayDefType
 from element_types.func_call_arg import FuncCallArg
+from element_types.vector_def_type import VectorDefType
 
 # ################################INSTRUCTIONS#########################################
 from instructions.declaration import Declaration
@@ -28,6 +29,9 @@ from instructions.conditional_match import MatchI
 from instructions.print_ln import PrintLN
 
 from instructions.return_i import ReturnI
+
+from instructions.vector_declaration import VectorDeclaration
+
 # ################################EXPRESSIONS#########################################
 from element_types.arithmetic_type import ArithmeticType
 from element_types.logic_type import LogicType
@@ -42,6 +46,7 @@ from expressions.conditional_expression import ConditionalExpression
 from expressions.match_expression import MatchExpression
 from expressions.func_call_expression import FunctionCallE
 from expressions.parameter_function_call import ParameterFunctionCallE
+from expressions.vector import VectorExpression
 
 tokens = lexer.tokens
 
@@ -96,6 +101,7 @@ def p_instruction(p):  # since all here are p[0] = p[1] (except void_inst) add a
     | println_inst SEMICOLON
     | match_statement
     | return_i SEMICOLON
+    | vector_declaration SEMICOLON
     """
     p[0] = p[1]
 
@@ -112,8 +118,46 @@ def p_no_semicolon_instruction(p):  # TODO all added to p_instruction should be 
     | println_inst
     | match_statement
     | return_i
+    | vector_declaration SEMICOLON
     """
     p[0] = p[1]
+
+
+# ###########################################VECTOR VARIABLE DECLARATION ###############################################
+def p_vec_declaration_1(p):
+    """vector_declaration : LET MUTABLE ID COLON vector_type EQUAL expression"""
+    p[0] = VectorDeclaration(p[3], p[5], p[7], True, p.lineno(1), -1)
+
+
+def p_vec_declaration_2(p):
+    """vector_declaration : LET ID COLON vector_type EQUAL expression"""
+    p[0] = VectorDeclaration(p[2], p[4], p[6], False, p.lineno(1), -1)
+
+
+def p_vector_type_r(p):
+    """vector_type : TYPE_VEC OPE_LESS vector_type OPE_MORE"""
+    p[0] = VectorDefType(True, p[3])
+
+
+def p_vector_type(p):
+    """vector_type : TYPE_VEC OPE_LESS variable_type OPE_MORE"""
+    p[0] = VectorDefType(False, p[3])
+
+
+def p_vector_expr_1(p):
+    """expression : VEC LOGIC_NOT array_expression"""
+    p[0] = VectorExpression(p[3], len(p[3].value), p.lineno(1), -1)
+
+
+def p_vector_expr_2(p):
+    """expression : TYPE_VEC COLON COLON NEW PARENTH_O PARENTH_C"""
+    p[0] = VectorExpression(None, None, p.lineno(1), -1)
+
+
+def p_vector_expr_3(p):
+    """expression : TYPE_VEC COLON COLON WITH_CAPACITY PARENTH_O expression PARENTH_C"""
+    p[0] = VectorExpression(None, p[6], p.lineno(1), -1)
+
 
 # #############################################RETURN STATEMENT#########################################################
 def p_return_i_1(p):

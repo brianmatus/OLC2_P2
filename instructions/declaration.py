@@ -7,8 +7,9 @@ from elements.c_env import Environment
 from abstract.expression import Expression
 from elements.value_tuple import ValueTuple
 from elements.c_env import Symbol
-from generator import Generator
 from elements.c_env import ArraySymbol
+from elements.c_env import VectorSymbol
+from generator import Generator
 from expressions.variable_ref import VariableReference
 from expressions.array_reference import ArrayReference
 
@@ -32,6 +33,16 @@ class Declaration(Instruction):
 
         from expressions.array_expression import ArrayExpression
         from instructions.array_declaration import ArrayDeclaration
+
+        from expressions.vector import VectorExpression
+        from instructions.vector_declaration import VectorDeclaration
+
+        # Do we have an impostor?
+        if isinstance(self.expression, VectorExpression):
+            # sus
+            correct_one = VectorDeclaration(self.variable_id, None, self.expression, self.is_mutable,
+                                            self.line, self.column)
+            return correct_one.execute(env)
         # Do we have an impostor?
         if isinstance(self.expression, ArrayExpression):
             # sus
@@ -39,7 +50,7 @@ class Declaration(Instruction):
                                            self.line, self.column)
             return correct_one.execute(env)
 
-        # Do we have an impostor? x2
+        # Do we have an impostor?
         if isinstance(self.expression, VariableReference):
             the_symbol: Symbol = env.get_variable(self.expression.variable_id)
 
@@ -49,7 +60,7 @@ class Declaration(Instruction):
                                                    self.line, self.column)
                     return correct_one.execute(env)
 
-        # Do we have an impostor? x3
+        # Do we have an impostor?
         if isinstance(self.expression, ArrayReference):
 
             the_symbol: ArraySymbol = env.get_variable(self.expression.variable_id)
@@ -57,6 +68,12 @@ class Declaration(Instruction):
             if the_symbol is not None:
                 if isinstance(the_symbol, ArraySymbol):
                     if len(self.expression.indexes) < len(the_symbol.dimensions):
+                        correct_one = ArrayDeclaration(self.variable_id, None, self.expression, self.is_mutable,
+                                                       self.line, self.column)
+                        return correct_one.execute(env)
+
+                elif isinstance(the_symbol, VectorSymbol):
+                    if len(self.expression.indexes) < the_symbol.deepness:
                         correct_one = ArrayDeclaration(self.variable_id, None, self.expression, self.is_mutable,
                                                        self.line, self.column)
                         return correct_one.execute(env)

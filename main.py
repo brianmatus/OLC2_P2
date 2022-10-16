@@ -177,11 +177,13 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
         final_generator.add_comment("<<<<<<<<<<<<<<<<<<<<End of program>>>>>>>>>>>>>>>>>>")
 
         _symbol_table = main_func.environment.symbol_table
-        print(final_generator.set_as_final_code())
+        final_generator.set_as_final_code()
+        # print(final_generator.get_code())
+
+        #
         # output_file = open('C:\\Users\\Matus\\Documents\\USAC\\Compi2\\Proyecto2\\c-interp\\main.c', "w")
         # output_file.write(str(final_generator.get_code()))
         # output_file.close()
-
         path = 'C:\\Users\\Matus\\Documents\\USAC\\Compi2\\Proyecto2\\c-interp\\main.c'
         with io.open(path, 'w', encoding='utf8', newline='\n') as fout:
             fout.write(final_generator.get_code())
@@ -194,13 +196,15 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
         _symbol_table = main_func.environment.symbol_table  # TODO delete me, debug only
         _function_list = global_config.function_list  # TODO delete me, debug only
         print(global_config.main_environment)
-        print("Resulting function list:")
+        # print("Resulting function list:")
         # print(function_list)
         # print("Resulting symbol table:")
         # print(global_config.generate_symbol_table(instruction_set, "Main"))
-        print("Resulting console output:")
         print("-------------------------------------------------------------------------------------------------------")
-        print(global_config.console_output)
+        print("-------------------------------------------------------------------------------------------------------")
+        print("--------------------------------------INITIAL COMPILING FINISHED---------------------------------------")
+        print("-------------------------------------------------------------------------------------------------------")
+        print("-------------------------------------------------------------------------------------------------------")
 
         return {
             "console_output": global_config.console_output,

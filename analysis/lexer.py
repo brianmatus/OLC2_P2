@@ -77,7 +77,7 @@ t_ignore = '\t \r'
 
 
 def t_COMMENT(t):
-    r"""//[^\n]*\n"""
+    r"""//[^\n]*(?=\n)"""
     pass
 
 

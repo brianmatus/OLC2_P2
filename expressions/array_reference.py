@@ -31,6 +31,12 @@ class ArrayReference(Expression):
 
         # TODO check for VectorSymbol
 
+        if isinstance(the_symbol, VectorSymbol):
+            from expressions.vector_reference import VectorReference
+            correct_one = VectorReference(self.variable_id, self.indexes, self.line, self.column)
+            return correct_one.execute(environment)
+
+
         if not isinstance(the_symbol, ArraySymbol):
             error_msg = f'Variable {self.variable_id} fue referida (indexada) como array sin serlo.'
             log_semantic_error(error_msg, self.line, self.column)
