@@ -58,13 +58,19 @@ class FunctionCallI(Instruction):
         final_generator.add_comment(f"-------------------------------Function Call of {self.function_id}"
                                     f"-------------------------------")
 
-        final_generator.add_comment("-----Temporal new P for setting up func args in new env-----")
-        delta_p = final_generator.new_temp()
-        final_generator.add_expression(delta_p, "P", env.size, "+")
+        arg_position = ""
+
+        if len(self.params) != 0:
+            final_generator.add_comment("-----Temporal new P for setting up func args in new env-----")
+            delta_p = final_generator.new_temp()
+            final_generator.add_expression(delta_p, "P", env.size, "+")
+            arg_position = final_generator.new_temp()
+        else:
+            final_generator.add_comment("Function has no args, no temporal new P needed")
 
         offset = 0  # For arrays with no size set
 
-        arg_position = final_generator.new_temp()
+
 
         for i in range(len(self.params)):
 

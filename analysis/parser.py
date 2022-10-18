@@ -146,7 +146,12 @@ def p_vector_type(p):
 
 def p_vector_expr_1(p):
     """expression : VEC LOGIC_NOT array_expression"""
-    p[0] = VectorExpression(p[3], len(p[3].value), p.lineno(1), -1)
+    if p[3].is_expansion:
+        p[0] = VectorExpression(p[3].value, p[3].expansion_size, p.lineno(1), -1)
+        return
+
+    # capacity here is not needed, it is calculated based on expression size
+    p[0] = VectorExpression(p[3], None, p.lineno(1), -1)
 
 
 def p_vector_expr_2(p):

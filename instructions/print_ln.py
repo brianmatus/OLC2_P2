@@ -33,7 +33,7 @@ class PrintLN(Instruction):
             global_config.log_semantic_error(error_msg, self.line, self.column)
             raise SemanticError(error_msg, self.line, self.column)
 
-        r: ValueTuple = self.expr_list[0].execute(env)
+        r: ValueTuple = self.expr_list[0].execute(env, forced_string=True)
         the_str = r.true_label[0]  # little hack lol
 
         needed = the_str.count("{}") + the_str.count("{:?}")

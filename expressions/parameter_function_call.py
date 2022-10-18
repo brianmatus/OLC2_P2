@@ -305,6 +305,9 @@ class ParameterFunctionCallE(Expression):
                                       generator=gen, content_type=ExpressionType.BOOL, capacity=None,
                                       is_tmp=True, true_label=[l_true], false_label=[l_false])
 
+                if self.function_id == "push":
+                    raise NotImplementedError()
+                    pass
 
             if result.expression_type == ExpressionType.ARRAY:
                 if self.function_id == "to_string":

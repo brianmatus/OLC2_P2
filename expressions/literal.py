@@ -12,7 +12,7 @@ class Literal(Expression):
         self.value = value
         self.expression_type: ExpressionType = expression_type
 
-    def execute(self, environment: Environment) -> ValueTuple:
+    def execute(self, environment: Environment, forced_string=False) -> ValueTuple:
 
         if self.expression_type in [ExpressionType.INT, ExpressionType.FLOAT]:
 
@@ -27,14 +27,19 @@ class Literal(Expression):
 
         if self.expression_type in [ExpressionType.STRING_PRIMITIVE, ExpressionType.STRING_CLASS]:
             generator = Generator()
+
+            if forced_string:
+                return ValueTuple(value=None, expression_type=self.expression_type, is_mutable=False,
+                                  content_type=self.expression_type, capacity=None, is_tmp=True, generator=generator,
+                                  true_label=[self.value], false_label=[])
+
+
             generator.add_comment(f"-----String: {self.value}-----")
             t = generator.new_temp()
             generator.add_expression(t, "H", "", "")
-
             for char in self.value:
                 generator.add_set_heap("H", str(ord(char)))
                 generator.add_next_heap()
-
             generator.add_set_heap("H", "-1")
             generator.add_next_heap()
 

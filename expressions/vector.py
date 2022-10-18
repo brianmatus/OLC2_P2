@@ -17,7 +17,7 @@ class VectorExpression(Expression):
     # expr: ArrayExpression (to clone lol) | None
     def __init__(self, expr, capacity: Union[Expression, None], line: int, column: int):
         super().__init__(line, column)
-        self.expr = expr
+        self.expr: Union[Expression, None] = expr
         self.capacity = capacity
 
     def execute(self, environment: Environment) -> ValueTuple:
@@ -97,28 +97,106 @@ class VectorExpression(Expression):
         # Normal declaration
 
         # Definition by expansion
-        if self.expr.is_expansion:
-            # expr: ValueTuple = self.values.execute(environment)
-            # repetitions: ValueTuple = self.expansion_size.execute(environment)
-            #
-            # if repetitions.expression_type is not ExpressionType.INT:
-            #     error_msg = f"La expansion de vector debe tener como cantidad un numero entero." \
-            #                 f"(Se obtuvo {repetitions.expression_type})"
-            #     global_config.log_semantic_error(error_msg, self.line, self.column)
-            #     raise SemanticError(error_msg, self.line, self.column)
-            #
-            # if repetitions.value < 1:
-            #     error_msg = f"La expansion de vector debe ser como minimo 1 (Se obtuvo {repetitions.value})"
-            #     global_config.log_semantic_error(error_msg, self.line, self.column)
-            #     raise SemanticError(error_msg, self.line, self.column)
-            #
-            # # FIX ME, should check if last 2 Nones are correct
-            # return ValueTuple(value=[expr]*int(repetitions.value), expression_type=ExpressionType.VECTOR,
-            #                   is_mutable=False, content_type=None, capacity=None,
-            #                   is_tmp=False, true_label=[], false_label=[], generator=Generator())
-            # TODO implement
-            for i in range(20):
-                print(f"array_expression.py::({i}/20 warnings) as expansion, to be implemented")
+        if self.capacity is not None:
+            if not isinstance(self.capacity, Literal):
+                error_msg = f'La expansion de un vector debe ser un literal entero/usize'
+                global_config.log_semantic_error(error_msg, self.line, self.column)
+                raise SemanticError(error_msg, self.line, self.column)
+
+            repeats = self.capacity.execute(environment)
+
+            if repeats.expression_type not in [ExpressionType.INT, ExpressionType.USIZE]:
+                error_msg = f'La expansion de un vector debe ser un literal entero/usize'
+                global_config.log_semantic_error(error_msg, self.line, self.column)
+                raise SemanticError(error_msg, self.line, self.column)
+
+            if repeats.value <= 0:
+                error_msg = f'La expansion de un vector debe ser mayor a 0'
+                global_config.log_semantic_error(error_msg, self.line, self.column)
+                raise SemanticError(error_msg, self.line, self.column)
+
+            result = self.expr.execute(environment)
+            # ############################### ACCEPTED ###############################
+            # Init it
+
+            # Every first vector element holds 4 values:
+            # 1: length
+            # 2: capacity
+            # 3: element, default_heap_value if not set
+            # 4: ptr_to_next_element, -1 if non
+            gen.add_comment("#################First element#################")
+
+            first_one = gen.new_temp()
+            gen.add_expression(first_one, "H", "", "")
+
+            gen.add_comment("1: length")
+            # 1: length
+            gen.add_set_heap("H", str(repeats.value))
+            gen.add_next_heap()
+
+            # 2: capacity
+            gen.add_comment("2: capacity")
+            gen.add_set_heap("H", str(repeats.value))
+            gen.add_next_heap()
+
+            # 3: element
+            gen.add_comment("3: element")
+            element_ptr = gen.new_temp()
+            gen.add_expression(element_ptr, "H", "", "")
+            gen.add_next_heap()
+
+            # 4: ptr_to_next_element
+            gen.add_comment("4: ptr_to_next_element")
+            next_pointer = gen.new_temp()
+            gen.add_expression(next_pointer, "H", "", "")
+            gen.add_set_heap("H", "-1")
+            gen.add_next_heap()
+
+            # Set value of 3)
+            gen.combine_with(result.generator)
+            gen.add_set_heap(element_ptr, result.value)
+
+            before_me_next_pointer = next_pointer
+
+            # Every next element holds 2 values:
+            # 1: element
+            # 2: pointer to next, -1 if non
+            for i in range(repeats.value-1):
+                gen.add_comment("#################Non-first element#################")
+
+                # ###########################Every next element###########################
+                # Link to previous
+                gen.add_set_heap(before_me_next_pointer, "H")
+
+                # 1: element
+                gen.add_comment("1: element")
+                element_ptr = gen.new_temp()
+                gen.add_expression(element_ptr, "H", "", "")
+                gen.add_next_heap()
+
+                # 2: pointer to next
+                gen.add_comment("2: pointer to next")
+                next_pointer = gen.new_temp()
+                gen.add_expression(next_pointer, "H", "", "")
+                gen.add_set_heap("H", "-1")
+                gen.add_next_heap()
+
+                # Set value of 1)
+                gen.combine_with(result.generator)
+                gen.add_set_heap(element_ptr, result.value)
+
+                before_me_next_pointer = next_pointer
+
+            the_capacity = result.capacity
+
+            if the_capacity is None:
+                the_capacity = [1]
+            else:
+                the_capacity = [the_capacity[0]+1]
+
+            return ValueTuple(value=first_one, expression_type=ExpressionType.VECTOR, is_mutable=True, generator=gen,
+                              content_type=result.expression_type, capacity=the_capacity, is_tmp=True,
+                              true_label=[], false_label=[])
 
         # ############Definition by list (or by new()/with_capacity() which is handled in this constructor)#############
 
@@ -138,8 +216,9 @@ class VectorExpression(Expression):
             content_type = tmp[0].expression_type
             break
 
-        gen = Generator()
-        gen.add_comment("---------Vector Expression-------------")
+        # TODO unnecessary?
+        # gen = Generator()
+        # gen.add_comment("---------Vector Expression-------------")
 
         # Allocating headers
 
