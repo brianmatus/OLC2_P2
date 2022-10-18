@@ -45,8 +45,18 @@ class ReturnI(Instruction):
             global_config.log_semantic_error(error_msg, self.line, self.column)
             raise SemanticError(error_msg, self.line, self.column)
 
+
         generator.combine_with(result.generator)
-        generator.add_expression("t0", result.value, "", "")
+        if result.expression_type == ExpressionType.BOOL:
+            l_added = generator.new_label()
+            generator.add_label(result.true_label)
+            generator.add_expression("t0", "1", "", "")
+            generator.add_goto(l_added)
+            generator.add_label(result.false_label)
+            generator.add_expression("t0", "0", "", "")
+            generator.add_label([l_added])
+        else:
+            generator.add_expression("t0", result.value, "", "")
         generator.add_expression("t2", "1", "", "")
         generator.add_goto(where_to_jump)
 

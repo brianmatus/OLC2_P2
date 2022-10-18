@@ -485,24 +485,24 @@ def p_func_var_3(p):  # Should only be used in arrays (and vectors??)
     p[0] = IDTuple(p[1], p[4][0], False, True, p[4][1], None)
 
 
-# def p_func_var_4(p):
-#     """func_var : ID COLON AMPERSAND vector_type"""
-#     tmp = p[4]
-#     i = 1
-#     while (tmp.is_nested_vector):
-#         i += 1
-#         tmp = tmp.content_type
-#     p[0] = IDTuple(p[1], ExpressionType.VECTOR, False, True, i, tmp.content_type)
+def p_func_var_4(p):
+    """func_var : ID COLON AMPERSAND vector_type"""
+    tmp = p[4]
+    i = 1
+    while tmp.is_nested_vector:
+        i += 1
+        tmp = tmp.content_type
+    p[0] = IDTuple(p[1], ExpressionType.VECTOR, False, True, {0: i}, tmp.content_type)
 
 
-# def p_func_var_5(p):
-#     """func_var : ID COLON AMPERSAND MUTABLE vector_type"""
-#     tmp = p[5]
-#     i = 1
-#     while (tmp.is_nested_vector):
-#         i += 1
-#         tmp = tmp.content_type
-#     p[0] = IDTuple(p[1], ExpressionType.VECTOR, True, True, i, tmp.content_type)
+def p_func_var_5(p):
+    """func_var : ID COLON AMPERSAND MUTABLE vector_type"""
+    tmp = p[5]
+    i = 1
+    while tmp.is_nested_vector:
+        i += 1
+        tmp = tmp.content_type
+    p[0] = IDTuple(p[1], ExpressionType.VECTOR, True, True, {0: i}, tmp.content_type)
 
 
 def p_func_var_6(p):  # Should only be used in arrays (and vectors??)

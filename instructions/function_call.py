@@ -84,15 +84,24 @@ class FunctionCallI(Instruction):
             d = not param.is_array and self.params[i].as_reference
             if c or d:
                 error_msg = f"La función {self.function_id} fue llamada con un array sin ser usado como referencia." \
-                            f" Usa el operador & para pasar un array (ej.: &array)"
+                            f" Usa el operador & para pasar un array (ej.: &array). Arg #{i + 1}"
                 log_semantic_error(error_msg, self.line, self.column)
                 raise SemanticError(error_msg, self.line, self.column)
+
+            if given.expression_type == ExpressionType.VECTOR:
+                if param.content_type != given.content_type:
+                    error_msg = f"La función {self.function_id} fue llamada con un tipo incorrecto de argumento. " \
+                                f"Arg #{i + 1}" \
+                                f"({param.content_type.name} <-> {given.content_type.name})"
+                    log_semantic_error(error_msg, self.line, self.column)
+                    raise SemanticError(error_msg, self.line, self.column)
 
             # Non mutable array was passed as mutable using &mut
             if given.expression_type == ExpressionType.ARRAY:
                 if param.is_mutable and not given.is_mutable:
                     print(f'u r not actually mutable, liar!')
-                    error_msg = f"La función {self.function_id} fue llamada con un array no mutable, como mutable"
+                    error_msg = f"La función {self.function_id} fue llamada con un array no mutable, como mutable. " \
+                                f"Arg #{i + 1}"
                     log_semantic_error(error_msg, self.line, self.column)
                     raise SemanticError(error_msg, self.line, self.column)
 

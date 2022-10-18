@@ -28,11 +28,24 @@ class VariableReference(Expression):
             raise SemanticError(error_msg, self.line, self.column)
 
         if isinstance(the_symbol, VectorSymbol):
-            vector_symbol: VectorSymbol = the_symbol
-            return ValueTuple(value=ExpressionType.VECTOR, expression_type=vector_symbol.symbol_type,
-                              is_mutable=vector_symbol.is_mutable, generator=Generator(),
-                              content_type=vector_symbol.symbol_type, capacity=vector_symbol.capacity, is_tmp=True,
-                              true_label=[""], false_label=[""])
+            array_symbol: VectorSymbol = the_symbol
+
+            generator = Generator()
+            generator.add_comment(f"-------------------------------Variable Reference of {self.variable_id} as vector"
+                                  f"-------------------------------")
+            generator.add_comment("var_ref::Calculated offset internally")
+            p_deepness = environment.get_variable_p_deepness(self.variable_id, 0)
+            ref_position = generator.new_temp()
+            generator.add_expression(ref_position, "P", str(0 - p_deepness), "+")
+
+            heap_address = generator.new_temp()
+            generator.add_comment("var_ref::Get the symbol stack value")
+            generator.add_get_stack(heap_address, ref_position)
+
+            return ValueTuple(value=heap_address, expression_type=ExpressionType.VECTOR,
+                              is_mutable=array_symbol.is_mutable, generator=generator,
+                              content_type=array_symbol.symbol_type, capacity=[the_symbol.deepness],
+                              is_tmp=True, true_label=[], false_label=[])
 
         if isinstance(the_symbol, ArraySymbol):
             array_symbol: ArraySymbol = the_symbol
@@ -41,7 +54,6 @@ class VariableReference(Expression):
             generator.add_comment(f"-------------------------------Variable Reference of {self.variable_id} as array"
                                   f"-------------------------------")
             generator.add_comment("var_ref::Calculated offset internally")
-            # TODO check if this is correct lol
             p_deepness = environment.get_variable_p_deepness(self.variable_id, 0)
             ref_position = generator.new_temp()
             generator.add_expression(ref_position, "P", str(0-p_deepness), "+")
@@ -50,11 +62,10 @@ class VariableReference(Expression):
             generator.add_comment("var_ref::Get the symbol stack value")
             generator.add_get_stack(heap_address, ref_position)
 
-            # TODO check if
             return ValueTuple(value=heap_address, expression_type=ExpressionType.ARRAY,
                               is_mutable=array_symbol.is_mutable, generator=generator,
                               content_type=array_symbol.symbol_type, capacity=list(array_symbol.dimensions.values()),
-                              is_tmp=True, true_label=[""], false_label=[""])
+                              is_tmp=True, true_label=[], false_label=[])
 
         generator = Generator()
         generator.add_comment(f"-------------------------------Variable Reference of {self.variable_id}"

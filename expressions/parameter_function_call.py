@@ -198,8 +198,113 @@ class ParameterFunctionCallE(Expression):
             result = self.variable_id.execute(environment)
             pass
 
-            # TODO check for vector
             # TODO check for struct
+            if result.expression_type == ExpressionType.VECTOR:
+                if self.function_id == "len":
+
+                    gen = Generator()
+                    gen.add_comment("-------------------param func call::var_ref::vector len-------------------")
+                    gen.combine_with(result.generator)
+                    gen.add_comment("---Pointer for value")
+                    value = gen.new_temp()
+                    gen.add_expression(value, result.value, "", "")
+                    gen.add_get_heap(value, value)
+
+                    return ValueTuple(value=value, expression_type=ExpressionType.INT, is_mutable=True,
+                                      generator=gen, content_type=ExpressionType.INT, capacity=None,
+                                      is_tmp=True, true_label=[], false_label=[])
+
+                if self.function_id == "capacity":
+
+                    gen = Generator()
+                    gen.add_comment("-------------------param func call::var_ref::vector capacity-------------------")
+                    gen.combine_with(result.generator)
+                    gen.add_comment("---Pointer for value")
+                    value = gen.new_temp()
+                    gen.add_expression(value, result.value, "1", "+")
+                    gen.add_get_heap(value, value)
+
+                    return ValueTuple(value=value, expression_type=ExpressionType.INT, is_mutable=True,
+                                      generator=gen, content_type=ExpressionType.INT, capacity=None,
+                                      is_tmp=True, true_label=[], false_label=[])
+
+                if self.function_id == "contains":
+
+                    if result.capacity[0] != 1:
+                        error_msg = f".contains() solo es valido para vectores no anidados (o su ultima capa)"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                    gen = Generator()
+                    gen.add_comment("-------------------param func call::var_ref::vector contains-------------------")
+
+                    if len(self.params) != 1:
+                        error_msg = f".contains() solo toma 1 argumento, {len(self.params)} fueron dados"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                    compare_to_result = self.params[0].expr.execute(environment)
+                    gen.combine_with(compare_to_result.generator)
+
+                    if compare_to_result.expression_type != result.content_type:
+                        error_msg = f"El elemento a comparar en .contains() debe ser del mismo tipo que el vector." \
+                                    f"({compare_to_result.expression_type.name} != {result.content_type.name})"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                    l_contains_element = gen.new_label()
+                    l_true = gen.new_label()
+                    l_false = gen.new_label()
+                    gen.combine_with(result.generator)
+                    gen.add_comment("---Pointer for value")
+
+                    t_pointer = gen.new_temp()
+                    gen.add_expression(t_pointer, result.value, "", "")
+
+                    counter = gen.new_temp()
+                    gen.add_get_heap(counter, t_pointer)
+
+                    gen.add_expression(t_pointer, t_pointer, "2", "+")  # offsets to element
+
+                    l_loop = gen.new_label()
+                    l_arrived = gen.new_label()
+
+                    gen.add_label([l_loop])
+                    gen.add_if(counter, "0", "==", l_arrived)
+
+                    if result.content_type in [ExpressionType.STRING_PRIMITIVE, ExpressionType.STRING_CLASS]:
+                        from expressions.logic import logical_str_compare
+                        l_str_true = gen.new_label()
+                        l_str_false = gen.new_label()
+
+                        value = gen.new_temp()
+                        gen.add_get_heap(value, t_pointer)
+                        logical_str_compare(gen, l_str_true, l_str_false, compare_to_result.value, value, "==")
+
+                        gen.add_label([l_str_true])
+                        gen.add_goto(l_contains_element)
+                        gen.add_label([l_str_false])
+
+                    else:
+                        value = gen.new_temp()
+                        gen.add_get_heap(value, t_pointer)
+                        gen.add_if(value, compare_to_result.value, "==", l_contains_element)
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
+                    gen.add_get_heap(t_pointer, t_pointer)
+                    gen.add_expression(counter, counter, "1", "-")
+                    gen.add_goto(l_loop)
+
+                    gen.add_label([l_arrived])
+                    gen.add_goto(l_false)
+
+                    gen.add_label([l_contains_element])
+                    gen.add_goto(l_true)
+
+                    return ValueTuple(value="dont_use_me_boolean", expression_type=ExpressionType.BOOL, is_mutable=True,
+                                      generator=gen, content_type=ExpressionType.BOOL, capacity=None,
+                                      is_tmp=True, true_label=[l_true], false_label=[l_false])
+
 
             if result.expression_type == ExpressionType.ARRAY:
                 if self.function_id == "to_string":
@@ -482,7 +587,6 @@ class ParameterFunctionCallE(Expression):
         return ValueTuple(counter, ExpressionType.INT, is_mutable=True, generator=generator,
                           content_type=ExpressionType.INT, capacity=None, is_tmp=True,
                           true_label=[], false_label=[])
-        pass
 
     def value_len(self, literal_expr, env: Environment) -> ValueTuple:
         generator = Generator()
@@ -537,6 +641,10 @@ def get_dimensions_for_passed_non_fixed_array(generator: Generator,
 
     if isinstance(arg, list):  # Derived of ArrayExpresion
         print("println.py::get_dimensions_for_passed_non_fixed_array, list instance::to be implemented")
+
+
+
+
 
 
 def traverse_loop_for_stringify(generator: Generator, the_arg: ValueTuple, ptr: str, t_max: str,

@@ -117,6 +117,9 @@ class Generator:
         if len(label) == 0:
             return
         for lbl in label:
+            if lbl == "":
+                print("WARNING: LBL IS EMPTY")
+
             self.code.append(f"{lbl}:")
 
     # var = val

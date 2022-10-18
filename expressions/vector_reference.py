@@ -76,9 +76,11 @@ class VectorReference(Expression):
         # Every next element holds 2 values:
         # 1: element
         # 2: pointer no next, -1 if non
-        t_pointer = generator.new_temp()  # 0 in picture example
+        t_pointer = generator.new_temp()
         generator.add_expression(t_pointer, base_heap_address, "", "")
-        for dim in dimensions:
+        for i in range(len(dimensions)):
+            dim = dimensions[i]
+
             counter = generator.new_temp()
 
             l_not_index_out_of_bounds = generator.new_label()
@@ -108,6 +110,9 @@ class VectorReference(Expression):
             generator.add_goto(l_loop)
 
             generator.add_label([l_arrived])
+            if i != len(dimensions)-1:
+                generator.add_comment("access pointer to next vect")
+                generator.add_get_heap(t_pointer, t_pointer)
 
         final_heap_address = generator.new_temp()
         # generator.add_get_heap(final_heap_address, t_pointer)
@@ -117,6 +122,7 @@ class VectorReference(Expression):
 
         if len(dimensions) != the_symbol.deepness:
             # Referring to a subarray
+            generator.add_get_heap(final_heap_address, final_heap_address)
 
             deepness = the_symbol.deepness - len(dimensions)
             return ValueTuple(value=final_heap_address, expression_type=ExpressionType.VECTOR, is_mutable=False,

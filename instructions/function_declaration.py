@@ -77,8 +77,13 @@ class FunctionDeclaration(Instruction):
             elif isinstance(param, ArrayExpression):
                 pass
 
+            elif param.expression_type == ExpressionType.VECTOR:
 
-            # TODO check for vector
+                self.environment.save_variable_vector(variable_id=param.variable_id,
+                                                      content_type=param.content_type,
+                                                      deepness=param.dimensions[0],
+                                                      is_mutable=param.is_mutable,
+                                                      line=self.line, column=self.column)
             # Any other normal expression:
             else:
                 self.environment.save_variable(param.variable_id, param.expression_type, param.is_mutable,

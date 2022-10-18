@@ -133,7 +133,7 @@ class VectorExpression(Expression):
             if len(tmp) <= 0:
                 break
             if tmp[0].expression_type in [ExpressionType.ARRAY, ExpressionType.VOID]:
-                tmp = tmp[0].values
+                tmp = tmp[0].expr.value
                 continue
             content_type = tmp[0].expression_type
             break

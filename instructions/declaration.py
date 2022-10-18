@@ -74,8 +74,8 @@ class Declaration(Instruction):
 
                 elif isinstance(the_symbol, VectorSymbol):
                     if len(self.expression.indexes) < the_symbol.deepness:
-                        correct_one = ArrayDeclaration(self.variable_id, None, self.expression, self.is_mutable,
-                                                       self.line, self.column)
+                        correct_one = VectorDeclaration(self.variable_id, None, self.expression, self.is_mutable,
+                                                        self.line, self.column)
                         return correct_one.execute(env)
 
         # Using not_init instead

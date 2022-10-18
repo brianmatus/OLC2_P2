@@ -96,8 +96,38 @@ class PrintLN(Instruction):
                     raise SemanticError(error_msg, self.line, self.column)
 
                 if the_arg.expression_type == ExpressionType.VECTOR:
-                    # TODO implement
+                    # if the_arg.expression_type == ExpressionType.ARRAY:
+                    generator.add_comment("-----------------##Printing Vector arg")
+                    ind = the_str.find("{:?}")
+                    message_before = the_str[:ind]
+                    generator.add_print_message(message_before)
+                    the_str = the_str[ind + 4:]
+
+                    generator.add_comment("---Pointer for value")
+                    ptr = generator.new_temp()
+                    generator.add_expression(ptr, the_arg.value, "", "")
+
+                    #
+                    #
+                    #
+                    body_generator = Generator()
+                    is_first = True
+                    the_ptr = generator.new_temp()
+                    for i in range(the_arg.capacity[0]):
+                        if is_first:
+                            traverse_vector_for_print(body_generator, the_arg, the_ptr, True)
+                            is_first = False
+                        else:
+                            the_ptr = traverse_vector_for_print(body_generator, the_arg, the_ptr, False)
+
+                    generator.add_comment("outer assignment of pointer")
+                    generator.add_expression(the_ptr, ptr, "", "")
+                    generator.combine_with(body_generator)
+
                     continue
+
+                    # TODO finish implement
+                    # raise NotImplementedError()
 
                 # if the_arg.expression_type == ExpressionType.ARRAY:
                 generator.add_comment("-----------------##Printing Array arg")
@@ -180,6 +210,111 @@ class PrintLN(Instruction):
 
         return ExecReturn(generator=generator,
                           propagate_break=False, propagate_continue=False, propagate_method_return=False)
+
+
+def traverse_vector_for_print(generator: Generator, the_arg: ValueTuple, ptr: str,
+                            is_first: bool) -> str:
+
+    if is_first:
+        generator.add_comment(
+            "-------------------------------------START PRINT TRAVERSE OF VECTOR-------------------------------------")
+        t_pointer = generator.new_temp()  #FIXME unnecesary? idk test nested first
+        generator.add_expression(t_pointer, ptr, "", "")
+
+        l_loop = generator.new_label()
+        l_exit = generator.new_label()
+
+        generator.add_printf("c", str(ord("[")))
+
+        length = generator.new_temp()
+        generator.add_get_heap(length, t_pointer)
+
+        generator.add_if(length, "0", "==", l_exit)
+
+        generator.add_expression(t_pointer, t_pointer, "2", "+")
+        l_avoid_comma = generator.new_label()
+        generator.add_goto(l_avoid_comma)
+
+        generator.add_label([l_loop])
+        generator.add_printf("c", str(ord(",")))
+
+        generator.add_label([l_avoid_comma])
+
+        if the_arg.content_type in [ExpressionType.STRING_PRIMITIVE, ExpressionType.STRING_CLASS]:
+            generate_array_string_print(generator, t_pointer)
+        else:
+            generate_array_primitive_print(the_arg, generator, t_pointer)
+
+        t_next = generator.new_temp()
+        generator.add_expression(t_next, t_pointer, "1", "+")
+        generator.add_get_heap(t_next, t_next)
+        generator.add_if(t_next, "-1", "==", l_exit)
+
+        generator.add_expression(t_pointer, t_next, "", "")
+
+        generator.add_goto(l_loop)
+
+        generator.add_label([l_exit])
+        generator.add_printf("c", str(ord("]")))
+
+        generator.add_comment(
+            "-------------------------------------END PRINT TRAVERSE OF VECTOR-------------------------------------")
+        return ptr
+
+
+    gen = generator
+    generator = Generator()
+
+    the_new_ptr = generator.new_temp()
+    generator.add_comment(
+        "------------------------------------START PRINT WRAP OF VECTOR------------------------------")
+    t_pointer = generator.new_temp()  # FIXME unnecesary? idk test nested first
+    generator.add_expression(t_pointer, the_new_ptr, "", "")
+
+    l_loop = generator.new_label()
+    l_exit = generator.new_label()
+
+    generator.add_printf("c", str(ord("[")))
+
+    length = generator.new_temp()
+    generator.add_get_heap(length, t_pointer)
+
+    generator.add_if(length, "0", "==", l_exit)
+
+    generator.add_expression(t_pointer, t_pointer, "2", "+")
+    l_avoid_comma = generator.new_label()
+    generator.add_goto(l_avoid_comma)
+
+    generator.add_label([l_loop])
+    generator.add_printf("c", str(ord(",")))
+
+    generator.add_label([l_avoid_comma])
+
+    generator.add_get_heap(ptr, t_pointer)
+
+    # ##############################################################################################
+    generator.combine_with(gen)
+    # ##############################################################################################
+
+    t_next = generator.new_temp()
+    generator.add_expression(t_next, t_pointer, "1", "+")
+    generator.add_get_heap(t_next, t_next)
+    generator.add_if(t_next, "-1", "==", l_exit)
+
+    generator.add_expression(t_pointer, t_next, "", "")
+
+    generator.add_goto(l_loop)
+
+    generator.add_label([l_exit])
+    generator.add_printf("c", str(ord("]")))
+
+    generator.add_comment(
+        "------------------------------------END PRINT WRAP OF VECTOR------------------------------")
+
+    gen.code = generator.code
+    return the_new_ptr
+
+
 
 
 def get_dimensions_for_passed_non_fixed_array(generator: Generator,
