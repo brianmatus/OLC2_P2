@@ -113,6 +113,660 @@ class ParameterFunctionCallE(Expression):
                                       generator=result.generator, content_type=ExpressionType.INT, capacity=None,
                                       is_tmp=True, true_label=[], false_label=[])
 
+            if result.expression_type == ExpressionType.VECTOR:
+                if self.function_id == "len":
+
+                    gen = Generator()
+                    gen.add_comment("-------------------param func call::var_ref::vector len-------------------")
+                    gen.combine_with(result.generator)
+                    gen.add_comment("---Pointer for value")
+                    value = gen.new_temp()
+                    gen.add_expression(value, result.value, "", "")
+                    gen.add_get_heap(value, value)
+
+                    return ValueTuple(value=value, expression_type=ExpressionType.INT, is_mutable=True,
+                                      generator=gen, content_type=ExpressionType.INT, capacity=None,
+                                      is_tmp=True, true_label=[], false_label=[])
+
+                if self.function_id == "capacity":
+
+                    gen = Generator()
+                    gen.add_comment("-------------------param func call::var_ref::vector capacity-------------------")
+                    gen.combine_with(result.generator)
+                    gen.add_comment("---Pointer for value")
+                    value = gen.new_temp()
+                    gen.add_expression(value, result.value, "1", "+")
+                    gen.add_get_heap(value, value)
+
+                    return ValueTuple(value=value, expression_type=ExpressionType.INT, is_mutable=True,
+                                      generator=gen, content_type=ExpressionType.INT, capacity=None,
+                                      is_tmp=True, true_label=[], false_label=[])
+
+                if self.function_id == "contains":
+
+                    if result.capacity[0] != 1:
+                        error_msg = f".contains() solo es valido para vectores no anidados (o su ultima capa)"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                    gen = Generator()
+                    gen.add_comment("-------------------param func call::var_ref::vector contains-------------------")
+
+                    if len(self.params) != 1:
+                        error_msg = f".contains() solo toma 1 argumento, {len(self.params)} fueron dados"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                    compare_to_result = self.params[0].expr.execute(environment)
+                    gen.combine_with(compare_to_result.generator)
+
+                    if compare_to_result.expression_type != result.content_type:
+                        error_msg = f"El elemento a comparar en .contains() debe ser del mismo tipo que el vector." \
+                                    f"({compare_to_result.expression_type.name} != {result.content_type.name})"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                    l_contains_element = gen.new_label()
+                    l_true = gen.new_label()
+                    l_false = gen.new_label()
+                    gen.combine_with(result.generator)
+                    gen.add_comment("---Pointer for value")
+
+                    t_pointer = gen.new_temp()
+                    gen.add_expression(t_pointer, result.value, "", "")
+
+                    counter = gen.new_temp()
+                    gen.add_get_heap(counter, t_pointer)
+
+                    gen.add_expression(t_pointer, t_pointer, "2", "+")  # offsets to element
+
+                    l_loop = gen.new_label()
+                    l_arrived = gen.new_label()
+
+                    gen.add_label([l_loop])
+                    gen.add_if(counter, "0", "==", l_arrived)
+
+                    if result.content_type in [ExpressionType.STRING_PRIMITIVE, ExpressionType.STRING_CLASS]:
+                        from expressions.logic import logical_str_compare
+                        l_str_true = gen.new_label()
+                        l_str_false = gen.new_label()
+
+                        value = gen.new_temp()
+                        gen.add_get_heap(value, t_pointer)
+                        logical_str_compare(gen, l_str_true, l_str_false, compare_to_result.value, value, "==")
+
+                        gen.add_label([l_str_true])
+                        gen.add_goto(l_contains_element)
+                        gen.add_label([l_str_false])
+
+                    else:
+                        value = gen.new_temp()
+                        gen.add_get_heap(value, t_pointer)
+                        gen.add_if(value, compare_to_result.value, "==", l_contains_element)
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
+                    gen.add_get_heap(t_pointer, t_pointer)
+                    gen.add_expression(counter, counter, "1", "-")
+                    gen.add_goto(l_loop)
+
+                    gen.add_label([l_arrived])
+                    gen.add_goto(l_false)
+
+                    gen.add_label([l_contains_element])
+                    gen.add_goto(l_true)
+
+                    return ValueTuple(value="dont_use_me_boolean", expression_type=ExpressionType.BOOL, is_mutable=True,
+                                      generator=gen, content_type=ExpressionType.BOOL, capacity=None,
+                                      is_tmp=True, true_label=[l_true], false_label=[l_false])
+
+                if self.function_id == "push":
+
+                    gen = Generator()
+                    gen.add_comment("-------------------param func call::var_ref::vector push-------------------")
+
+                    if len(self.params) != 1:
+                        error_msg = f".push() solo toma 1 argumento, {len(self.params)} fueron dados"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                    element_to_push = self.params[0].expr.execute(environment)
+                    gen.combine_with(element_to_push.generator)
+
+                    if element_to_push.capacity is None:
+                        element_to_push.capacity = []
+
+                    if len(element_to_push.capacity) + 1 != result.capacity[0]:
+                        error_msg = f"El elemento a insertar con .push() no tiene la profundidad correcta" \
+                                    f"({len(element_to_push.capacity) + 1} != {result.capacity[0]})"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                    # TODO content or expression?
+                    if element_to_push.content_type != result.content_type:
+                        error_msg = f"El elemento a insertar con .push() debe ser del mismo tipo que el vector." \
+                                    f"({element_to_push.expression_type.name} != {result.content_type.name})"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                    # ################### ACCEPTED ###################
+                    l_finished = gen.new_label()
+                    gen.combine_with(result.generator)
+                    gen.add_comment("---Pointer for value")
+
+                    t_pointer = gen.new_temp()
+                    gen.add_expression(t_pointer, result.value, "", "")
+
+                    t_old_length = gen.new_temp()
+                    gen.add_get_heap(t_old_length, t_pointer)
+
+                    t_new_length = gen.new_temp()
+                    gen.add_expression(t_new_length, t_old_length, "1", "+")
+                    gen.add_set_heap(t_pointer, t_new_length)
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to capacity
+                    t_capacity = gen.new_temp()
+                    gen.add_get_heap(t_capacity, t_pointer)
+
+                    l_no_update = gen.new_label()
+                    l_not_zero = gen.new_label()
+                    gen.add_if(t_capacity, t_new_length, ">=", l_no_update)
+                    gen.add_if(t_capacity, "0", "!=", l_not_zero)
+                    gen.add_expression(t_capacity, "1", "", "")
+                    gen.add_set_heap(t_pointer, t_capacity)
+                    gen.add_goto(l_no_update)
+
+                    gen.add_label([l_not_zero])
+                    gen.add_expression(t_capacity, "2", t_capacity, "*")
+                    gen.add_set_heap(t_pointer, t_capacity)
+                    gen.add_label([l_no_update])
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to element
+
+                    l_loop = gen.new_label()
+                    l_arrived = gen.new_label()
+
+                    l_was_not_empty = gen.new_label()
+
+                    gen.add_if(t_old_length, "0", "!=", l_was_not_empty)
+
+                    gen.add_set_heap(t_pointer, element_to_push.value)
+
+                    gen.add_goto(l_finished)
+                    gen.add_label([l_was_not_empty])
+
+                    gen.add_label([l_loop])
+
+                    next_element_ptr = gen.new_temp()
+                    next_element_val = gen.new_temp()
+                    gen.add_expression(next_element_ptr, t_pointer, "1", "+")
+                    gen.add_get_heap(next_element_val, next_element_ptr)
+
+                    gen.add_if(next_element_val, "-1", "==", l_arrived)
+                    gen.add_expression(t_pointer, next_element_val, "", "")
+                    gen.add_goto(l_loop)
+
+                    gen.add_label([l_arrived])
+                    gen.add_set_heap(next_element_ptr, "H")
+
+                    gen.add_set_heap("H", element_to_push.value)
+                    gen.add_next_heap()
+                    gen.add_set_heap("H", "-1")
+                    gen.add_next_heap()
+
+                    gen.add_label([l_finished])
+
+                    # .push returns the vector itself
+                    result.generator = gen
+                    return result
+
+                if self.function_id == "insert":
+
+                    gen = Generator()
+                    gen.add_comment("-------------------param func call::var_ref::vector insert-------------------")
+                    gen.combine_with(result.generator)
+
+                    if len(self.params) != 2:
+                        error_msg = f".insert() solo toma 2 argumentos, {len(self.params)} fueron dados"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+                    # ##################################################################################################
+                    index = self.params[0].expr.execute(environment)
+                    gen.combine_with(index.generator)
+
+                    if index.expression_type not in [ExpressionType.INT, ExpressionType.USIZE]:
+                        error_msg = f"El indice de un vector en .insert(i,v) debe ser INT o USIZE"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                    l_positive = gen.new_label()
+                    gen.add_if(index.value, "0", ">=", l_positive)
+                    gen.add_print_message(f"vector.insert(i,v)r->{self.line} c->{self.column}::ERROR: Negative index")
+                    gen.add_error_return("8")
+                    gen.add_label([l_positive])
+                    # ##################################################################################################
+                    element_to_push = self.params[1].expr.execute(environment)
+                    gen.combine_with(element_to_push.generator)
+
+                    if element_to_push.capacity is None:
+                        element_to_push.capacity = []
+
+                    if len(element_to_push.capacity) + 1 != result.capacity[0]:
+                        error_msg = f"El elemento a insertar con .push() no tiene la profundidad correcta" \
+                                    f"({len(element_to_push.capacity) + 1} != {result.capacity[0]})"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                    if element_to_push.expression_type != result.content_type:
+                        error_msg = f"El elemento a insertar con .push() debe ser del mismo tipo que el vector." \
+                                    f"({element_to_push.expression_type.name} != {result.content_type.name})"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+                    # ##################################################################################################
+                    l_finished = gen.new_label()
+                    l_index_not_zero = gen.new_label()
+
+                    counter = gen.new_temp()
+                    gen.add_expression(counter, index.value, "", "")
+
+                    gen.add_comment("---Pointer for value")
+                    t_pointer = gen.new_temp()
+                    gen.add_expression(t_pointer, result.value, "", "")
+
+                    gen.add_if(counter, "0", "!=", l_index_not_zero)
+                    gen.add_comment("---------------------------------------------------------------------------------")
+                    gen.add_comment("--------------------------------------INDEX ZERO---------------------------------")
+                    gen.add_comment("---------------------------------------------------------------------------------")
+
+                    t_old_length = gen.new_temp()
+                    gen.add_get_heap(t_old_length, t_pointer)
+
+                    t_new_length = gen.new_temp()
+                    gen.add_expression(t_new_length, t_old_length, "1", "+")
+                    gen.add_set_heap(t_pointer, t_new_length)
+
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to capacity
+                    t_capacity = gen.new_temp()
+                    gen.add_get_heap(t_capacity, t_pointer)
+
+                    l_no_update = gen.new_label()
+                    l_not_zero = gen.new_label()
+                    gen.add_if(t_capacity, t_new_length, ">=", l_no_update)
+                    gen.add_if(t_capacity, "0", "!=", l_not_zero)
+                    gen.add_expression(t_capacity, "1", "", "")
+                    gen.add_set_heap(t_pointer, t_capacity)
+                    gen.add_goto(l_no_update)
+
+                    gen.add_label([l_not_zero])
+                    gen.add_expression(t_capacity, "2", t_capacity, "*")
+                    gen.add_set_heap(t_pointer, t_capacity)
+
+                    gen.add_label([l_no_update])
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to element
+                    old_first_value = gen.new_temp()
+                    gen.add_get_heap(old_first_value, t_pointer)
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to next
+                    old_first_next = gen.new_temp()
+                    gen.add_get_heap(old_first_next, t_pointer)
+
+                    l_was_empty_1 = gen.new_label()
+                    gen.add_if(t_old_length, "0", "==", l_was_empty_1)
+                    # Reallocate old_first_value to other heap
+                    place = gen.new_temp()
+                    gen.add_expression(place, "H", "", "")
+                    gen.add_set_heap("H", old_first_value)
+                    gen.add_next_heap()
+                    # Reallocate old_first_next to other heap
+                    gen.add_set_heap("H", old_first_next)
+                    gen.add_next_heap()
+
+                    gen.add_label([l_was_empty_1])
+
+                    l_was_empty_2 = gen.new_label()
+                    gen.add_if(t_old_length, "0", "==", l_was_empty_2)
+
+                    # Set new next
+                    gen.add_set_heap(t_pointer, place)
+                    # Return to value pointer
+                    gen.add_label([l_was_empty_2])
+                    gen.add_expression(t_pointer, t_pointer, "1", "-")  # offsets to element
+                    gen.add_set_heap(t_pointer, element_to_push.value)
+
+                    #
+                    gen.add_goto(l_finished)
+                    # ##################################################################################################
+                    gen.add_label([l_index_not_zero])
+                    l_index_not_equal_length = gen.new_label()
+                    t_length = gen.new_temp()
+                    gen.add_get_heap(t_length, t_pointer)
+
+                    gen.add_if(counter, t_length, "!=", l_index_not_equal_length)
+                    gen.add_comment("---------------------------------------------------------------------------------")
+                    gen.add_comment("------------------------------------INDEX=LENGTH---------------------------------")
+                    gen.add_comment("---------------------------------------------------------------------------------")
+
+                    t_old_length = gen.new_temp()
+                    gen.add_get_heap(t_old_length, t_pointer)
+
+                    t_new_length = gen.new_temp()
+                    gen.add_expression(t_new_length, t_old_length, "1", "+")
+                    gen.add_set_heap(t_pointer, t_new_length)
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to capacity
+                    t_capacity = gen.new_temp()
+                    gen.add_get_heap(t_capacity, t_pointer)
+
+                    l_no_update = gen.new_label()
+                    l_not_zero = gen.new_label()
+                    gen.add_if(t_capacity, t_new_length, ">=", l_no_update)
+                    gen.add_if(t_capacity, "0", "!=", l_not_zero)
+                    gen.add_expression(t_capacity, "1", "", "")
+                    gen.add_set_heap(t_pointer, t_capacity)
+                    gen.add_goto(l_no_update)
+
+                    gen.add_label([l_not_zero])
+                    gen.add_expression(t_capacity, "2", t_capacity, "*")
+                    gen.add_set_heap(t_pointer, t_capacity)
+
+                    gen.add_label([l_no_update])
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to element
+
+                    l_loop = gen.new_label()
+                    l_arrived = gen.new_label()
+
+                    gen.add_expression(counter, counter, "1", "-")
+
+                    gen.add_label([l_loop])
+                    gen.add_if(counter, "0", "==", l_arrived)
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
+                    gen.add_get_heap(t_pointer, t_pointer)
+                    gen.add_expression(counter, counter, "1", "-")
+                    gen.add_goto(l_loop)
+
+                    gen.add_label([l_arrived])
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
+
+                    gen.add_set_heap("H", element_to_push.value)
+                    gen.add_set_heap(t_pointer, "H")
+                    gen.add_next_heap()
+                    gen.add_set_heap("H", "-1")
+                    gen.add_next_heap()
+
+                    gen.add_goto(l_finished)
+
+                    gen.add_comment("---------------------------------------------------------------------------------")
+                    gen.add_comment("------------------------------------MIDDLE CASE----------------------------------")
+                    gen.add_comment("---------------------------------------------------------------------------------")
+                    gen.add_label([l_index_not_equal_length])
+
+                    t_old_length = gen.new_temp()
+                    gen.add_get_heap(t_old_length, t_pointer)
+
+                    t_new_length = gen.new_temp()
+                    gen.add_expression(t_new_length, t_old_length, "1", "+")
+                    gen.add_set_heap(t_pointer, t_new_length)
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to capacity
+                    t_capacity = gen.new_temp()
+                    gen.add_get_heap(t_capacity, t_pointer)
+
+
+                    #TODO check for capacity==0 needed here? index is know not to be 0 and not to be out of bounds
+                    l_no_update = gen.new_label()
+                    l_not_zero = gen.new_label()
+                    gen.add_if(t_capacity, t_new_length, ">=", l_no_update)
+                    gen.add_if(t_capacity, "0", "!=", l_not_zero)
+                    gen.add_expression(t_capacity, "1", "", "")
+                    gen.add_set_heap(t_pointer, t_capacity)
+                    gen.add_goto(l_no_update)
+
+                    gen.add_label([l_not_zero])
+                    gen.add_expression(t_capacity, "2", t_capacity, "*")
+                    gen.add_set_heap(t_pointer, t_capacity)
+
+                    gen.add_label([l_no_update])
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to element
+
+                    l_index_not_out_of_bounds = gen.new_label()
+                    t_length = gen.new_temp()
+                    gen.add_get_heap(t_length, t_pointer)
+                    gen.add_if(counter, t_length, "<=", l_index_not_out_of_bounds)
+
+                    gen.add_print_message(f"vector.insert(i,v)::r->{self.line} c->{self.column}::"
+                                          f"ERROR:Index out of bounds")
+                    gen.add_error_return("9")
+
+                    gen.add_label([l_index_not_out_of_bounds])
+
+
+
+                    l_loop = gen.new_label()
+                    l_arrived = gen.new_label()
+
+                    t_before_next_ptr = gen.new_temp()
+
+                    gen.add_label([l_loop])
+                    gen.add_if(counter, "0", "==", l_arrived)
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
+                    gen.add_expression(t_before_next_ptr, t_pointer, "", "")
+                    gen.add_get_heap(t_pointer, t_pointer)
+                    gen.add_expression(counter, counter, "1", "-")
+                    gen.add_goto(l_loop)
+
+                    gen.add_label([l_arrived])
+
+                    t_before_next_value = gen.new_temp()
+                    gen.add_get_heap(t_before_next_value, t_before_next_ptr)
+                    # t_before_next_ptr needs to be new
+                    gen.add_set_heap(t_before_next_ptr, "H")
+                    # Create element of new Node
+                    gen.add_set_heap("H", element_to_push.value)
+                    gen.add_next_heap()
+                    # new+1 needs to be t_before_next_ptr
+                    gen.add_set_heap("H", t_before_next_value)
+                    gen.add_next_heap()
+                    gen.add_label([l_finished])
+
+                    # .insert returns the vector itself
+                    result.generator = gen
+                    return result
+
+                if self.function_id == "remove":
+
+                    gen = Generator()
+                    gen.add_comment("-------------------param func call::var_ref::vector remove-------------------")
+                    gen.combine_with(result.generator)
+
+                    if len(self.params) != 1:
+                        error_msg = f".remove() solo toma 1 argumento, {len(self.params)} fueron dados"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+                    # ##################################################################################################
+                    index = self.params[0].expr.execute(environment)
+                    gen.combine_with(index.generator)
+
+                    if index.expression_type not in [ExpressionType.INT, ExpressionType.USIZE]:
+                        error_msg = f"El indice de un vector en .insert(i,v) debe ser INT o USIZE"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                    l_positive = gen.new_label()
+                    gen.add_if(index.value, "0", ">=", l_positive)
+                    gen.add_print_message(f"vector.insert(i,v)r->{self.line} c->{self.column}::ERROR: Negative index")
+                    gen.add_error_return("8")
+                    gen.add_label([l_positive])
+                    # ##################################################################################################
+                    l_finished = gen.new_label()
+                    l_index_not_zero = gen.new_label()
+
+                    counter = gen.new_temp()
+                    gen.add_expression(counter, index.value, "", "")
+
+                    gen.add_comment("---Pointer for value")
+                    t_pointer = gen.new_temp()
+                    gen.add_expression(t_pointer, result.value, "", "")
+
+                    gen.add_if(counter, "0", "!=", l_index_not_zero)
+                    gen.add_comment("---------------------------------------------------------------------------------")
+                    gen.add_comment("--------------------------------------INDEX ZERO---------------------------------")
+                    gen.add_comment("---------------------------------------------------------------------------------")
+
+                    t_old_length = gen.new_temp()
+                    gen.add_get_heap(t_old_length, t_pointer)
+                    t_new_length = gen.new_temp()
+                    gen.add_expression(t_new_length, t_old_length, "1", "-")
+                    gen.add_set_heap(t_pointer, t_new_length)
+
+                    l_length_not_zero = gen.new_label()
+
+                    gen.add_if(t_old_length, "0", "!=", l_length_not_zero)
+                    gen.add_print_message("REMOVE CALLED ON EMPTY VECTOR")
+                    gen.add_error_return("11")
+                    gen.add_label([l_length_not_zero])
+
+                    l_length_not_one = gen.new_label()
+                    gen.add_if(t_old_length, "1", "!=", l_length_not_one)
+
+                    gen.add_expression(t_pointer, t_pointer, "2", "+")  # offsets to element
+                    gen.add_set_heap(t_pointer, "-6969")
+
+                    gen.add_goto(l_finished)
+
+                    gen.add_label([l_length_not_one])
+
+                    gen.add_expression(t_pointer, t_pointer, "3", "+")  # offsets to next
+                    t_next_element_ptr = gen.new_temp()
+                    gen.add_get_heap(t_next_element_ptr, t_pointer)
+
+                    t_after_value = gen.new_temp()
+                    t_after_next = gen.new_temp()
+                    gen.add_get_heap(t_after_value, t_next_element_ptr)
+                    gen.add_expression(t_next_element_ptr, t_next_element_ptr, "1", "+")
+                    gen.add_get_heap(t_after_next, t_next_element_ptr)
+
+                    gen.add_set_heap(t_pointer, t_after_next)
+                    gen.add_expression(t_pointer, t_pointer, "1", "-")  # offsets to element
+                    gen.add_set_heap(t_pointer, t_after_value)
+                    gen.add_goto(l_finished)
+                    # ##################################################################################################
+                    gen.add_label([l_index_not_zero])
+                    l_index_not_equal_length = gen.new_label()
+                    t_length = gen.new_temp()
+                    gen.add_get_heap(t_length, t_pointer)
+
+                    t_max_index = gen.new_temp()
+                    gen.add_expression(t_max_index, t_length, "1", "-")
+
+                    gen.add_if(counter, t_max_index, "!=", l_index_not_equal_length)
+                    gen.add_comment("---------------------------------------------------------------------------------")
+                    gen.add_comment("------------------------------------INDEX=LENGTH---------------------------------")
+                    gen.add_comment("---------------------------------------------------------------------------------")
+
+                    gen.add_set_heap(t_pointer, t_max_index)
+                    gen.add_expression(t_pointer, t_pointer, "2", "+")  # offsets to element
+
+                    l_loop = gen.new_label()
+                    l_arrived = gen.new_label()
+                    gen.add_expression(counter, counter, "1", "-")
+                    gen.add_label([l_loop])
+                    gen.add_if(counter, "0", "==", l_arrived)
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
+                    gen.add_get_heap(t_pointer, t_pointer)
+                    gen.add_expression(counter, counter, "1", "-")
+                    gen.add_goto(l_loop)
+
+                    gen.add_label([l_arrived])
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
+                    gen.add_set_heap(t_pointer, "-1")
+
+                    # gen.add_set_heap("H", element_to_push.value)
+                    # gen.add_set_heap(t_pointer, "H")
+                    # gen.add_next_heap()
+                    # gen.add_set_heap("H", "-1")
+                    # gen.add_next_heap()
+
+                    gen.add_goto(l_finished)
+
+                    gen.add_comment("---------------------------------------------------------------------------------")
+                    gen.add_comment("------------------------------------MIDDLE CASE----------------------------------")
+                    gen.add_comment("---------------------------------------------------------------------------------")
+                    gen.add_label([l_index_not_equal_length])
+
+                    t_old_length = gen.new_temp()
+                    gen.add_get_heap(t_old_length, t_pointer)
+
+                    t_new_length = gen.new_temp()
+                    gen.add_expression(t_new_length, t_old_length, "1", "-")
+                    gen.add_set_heap(t_pointer, t_new_length)
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to capacity
+                    t_capacity = gen.new_temp()
+                    gen.add_get_heap(t_capacity, t_pointer)
+
+                    l_no_update = gen.new_label()
+                    l_not_zero = gen.new_label()
+                    gen.add_if(t_capacity, t_new_length, ">=", l_no_update)
+                    gen.add_if(t_capacity, "0", "!=", l_not_zero)
+                    gen.add_expression(t_capacity, "1", "", "")
+                    gen.add_set_heap(t_pointer, t_capacity)
+                    gen.add_goto(l_no_update)
+
+                    gen.add_label([l_not_zero])
+                    gen.add_expression(t_capacity, "2", t_capacity, "*")
+                    gen.add_set_heap(t_pointer, t_capacity)
+
+                    gen.add_label([l_no_update])
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to element
+
+                    l_index_not_out_of_bounds = gen.new_label()
+                    gen.add_if(counter, t_old_length, "<", l_index_not_out_of_bounds)
+
+                    gen.add_print_message(f"vector.remove(i)::r->{self.line} c->{self.column}::"
+                                          f"ERROR:Index out of bounds")
+                    gen.add_error_return("9")
+
+                    gen.add_label([l_index_not_out_of_bounds])
+
+                    l_loop = gen.new_label()
+                    l_arrived = gen.new_label()
+
+                    t_before_next_ptr = gen.new_temp()
+
+                    gen.add_label([l_loop])
+                    gen.add_if(counter, "0", "==", l_arrived)
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
+                    gen.add_expression(t_before_next_ptr, t_pointer, "", "")
+                    gen.add_get_heap(t_pointer, t_pointer)  # goto element of next
+                    gen.add_expression(counter, counter, "1", "-")
+                    gen.add_goto(l_loop)
+
+                    gen.add_label([l_arrived])
+
+                    t_removed_element_value = gen.new_temp()
+                    gen.add_get_heap(t_removed_element_value, t_pointer)
+
+                    t_next_ptr_value = gen.new_temp()
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
+                    gen.add_get_heap(t_next_ptr_value, t_pointer)
+
+                    gen.add_set_heap(t_before_next_ptr, t_next_ptr_value)
+
+                    gen.add_label([l_finished])
+                    # .remove returns the removed element
+
+                    # TODO check for booleans
+                    return ValueTuple(value=t_removed_element_value, expression_type=result.expression_type,
+                                      is_mutable=result.is_mutable, generator=gen, content_type=result.content_type,
+                                      capacity=[result.capacity[0] - 1], is_tmp=True, true_label=[], false_label=[])
+
             # Result is primitive
             if self.function_id == "to_string":
                 if result.expression_type in [ExpressionType.STRING_PRIMITIVE,  ExpressionType.STRING_CLASS,
@@ -306,8 +960,560 @@ class ParameterFunctionCallE(Expression):
                                       is_tmp=True, true_label=[l_true], false_label=[l_false])
 
                 if self.function_id == "push":
-                    raise NotImplementedError()
-                    pass
+
+                    gen = Generator()
+                    gen.add_comment("-------------------param func call::var_ref::vector push-------------------")
+
+                    if len(self.params) != 1:
+                        error_msg = f".push() solo toma 1 argumento, {len(self.params)} fueron dados"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                    element_to_push = self.params[0].expr.execute(environment)
+                    gen.combine_with(element_to_push.generator)
+
+                    if element_to_push.capacity is None:
+                        element_to_push.capacity = []
+
+                    if len(element_to_push.capacity) + 1 != result.capacity[0]:
+                        error_msg = f"El elemento a insertar con .push() no tiene la profundidad correcta" \
+                                    f"({len(element_to_push.capacity) + 1} != {result.capacity[0]})"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                    # TODO content or expression?
+                    if element_to_push.content_type != result.content_type:
+                        error_msg = f"El elemento a insertar con .push() debe ser del mismo tipo que el vector." \
+                                    f"({element_to_push.expression_type.name} != {result.content_type.name})"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                    # ################### ACCEPTED ###################
+                    l_finished = gen.new_label()
+                    gen.combine_with(result.generator)
+                    gen.add_comment("---Pointer for value")
+
+                    t_pointer = gen.new_temp()
+                    gen.add_expression(t_pointer, result.value, "", "")
+
+                    t_old_length = gen.new_temp()
+                    gen.add_get_heap(t_old_length, t_pointer)
+
+                    t_new_length = gen.new_temp()
+                    gen.add_expression(t_new_length, t_old_length, "1", "+")
+                    gen.add_set_heap(t_pointer, t_new_length)
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to capacity
+                    t_capacity = gen.new_temp()
+                    gen.add_get_heap(t_capacity, t_pointer)
+
+                    l_no_update = gen.new_label()
+                    l_not_zero = gen.new_label()
+                    gen.add_if(t_capacity, t_new_length, ">=", l_no_update)
+                    gen.add_if(t_capacity, "0", "!=", l_not_zero)
+                    gen.add_expression(t_capacity, "1", "", "")
+                    gen.add_set_heap(t_pointer, t_capacity)
+                    gen.add_goto(l_no_update)
+
+                    gen.add_label([l_not_zero])
+                    gen.add_expression(t_capacity, "2", t_capacity, "*")
+                    gen.add_set_heap(t_pointer, t_capacity)
+                    gen.add_label([l_no_update])
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to element
+
+                    l_loop = gen.new_label()
+                    l_arrived = gen.new_label()
+
+                    l_was_not_empty = gen.new_label()
+
+                    gen.add_if(t_old_length, "0", "!=", l_was_not_empty)
+
+                    gen.add_set_heap(t_pointer, element_to_push.value)
+
+                    gen.add_goto(l_finished)
+                    gen.add_label([l_was_not_empty])
+
+                    gen.add_label([l_loop])
+
+                    next_element_ptr = gen.new_temp()
+                    next_element_val = gen.new_temp()
+                    gen.add_expression(next_element_ptr, t_pointer, "1", "+")
+                    gen.add_get_heap(next_element_val, next_element_ptr)
+
+                    gen.add_if(next_element_val, "-1", "==", l_arrived)
+                    gen.add_expression(t_pointer, next_element_val, "", "")
+                    gen.add_goto(l_loop)
+
+                    gen.add_label([l_arrived])
+                    gen.add_set_heap(next_element_ptr, "H")
+
+                    gen.add_set_heap("H", element_to_push.value)
+                    gen.add_next_heap()
+                    gen.add_set_heap("H", "-1")
+                    gen.add_next_heap()
+
+                    gen.add_label([l_finished])
+
+                    # .push returns the vector itself
+                    result.generator = gen
+                    return result
+
+                if self.function_id == "insert":
+
+                    gen = Generator()
+                    gen.add_comment("-------------------param func call::var_ref::vector insert-------------------")
+                    gen.combine_with(result.generator)
+
+                    if len(self.params) != 2:
+                        error_msg = f".insert() solo toma 2 argumentos, {len(self.params)} fueron dados"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+                    # ##################################################################################################
+                    index = self.params[0].expr.execute(environment)
+                    gen.combine_with(index.generator)
+
+                    if index.expression_type not in [ExpressionType.INT, ExpressionType.USIZE]:
+                        error_msg = f"El indice de un vector en .insert(i,v) debe ser INT o USIZE"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                    l_positive = gen.new_label()
+                    gen.add_if(index.value, "0", ">=", l_positive)
+                    gen.add_print_message(f"vector.insert(i,v)r->{self.line} c->{self.column}::ERROR: Negative index")
+                    gen.add_error_return("8")
+                    gen.add_label([l_positive])
+                    # ##################################################################################################
+                    element_to_push = self.params[1].expr.execute(environment)
+                    gen.combine_with(element_to_push.generator)
+
+                    if element_to_push.capacity is None:
+                        element_to_push.capacity = []
+
+                    if len(element_to_push.capacity) + 1 != result.capacity[0]:
+                        error_msg = f"El elemento a insertar con .push() no tiene la profundidad correcta" \
+                                    f"({len(element_to_push.capacity) + 1} != {result.capacity[0]})"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                    if element_to_push.expression_type != result.content_type:
+                        error_msg = f"El elemento a insertar con .push() debe ser del mismo tipo que el vector." \
+                                    f"({element_to_push.expression_type.name} != {result.content_type.name})"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+                    # ##################################################################################################
+                    l_finished = gen.new_label()
+                    l_index_not_zero = gen.new_label()
+
+                    counter = gen.new_temp()
+                    gen.add_expression(counter, index.value, "", "")
+
+                    gen.add_comment("---Pointer for value")
+                    t_pointer = gen.new_temp()
+                    gen.add_expression(t_pointer, result.value, "", "")
+
+                    gen.add_if(counter, "0", "!=", l_index_not_zero)
+                    gen.add_comment("---------------------------------------------------------------------------------")
+                    gen.add_comment("--------------------------------------INDEX ZERO---------------------------------")
+                    gen.add_comment("---------------------------------------------------------------------------------")
+
+                    t_old_length = gen.new_temp()
+                    gen.add_get_heap(t_old_length, t_pointer)
+
+                    t_new_length = gen.new_temp()
+                    gen.add_expression(t_new_length, t_old_length, "1", "+")
+                    gen.add_set_heap(t_pointer, t_new_length)
+
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to capacity
+                    t_capacity = gen.new_temp()
+                    gen.add_get_heap(t_capacity, t_pointer)
+
+                    l_no_update = gen.new_label()
+                    l_not_zero = gen.new_label()
+                    gen.add_if(t_capacity, t_new_length, ">=", l_no_update)
+                    gen.add_if(t_capacity, "0", "!=", l_not_zero)
+                    gen.add_expression(t_capacity, "1", "", "")
+                    gen.add_set_heap(t_pointer, t_capacity)
+                    gen.add_goto(l_no_update)
+
+                    gen.add_label([l_not_zero])
+                    gen.add_expression(t_capacity, "2", t_capacity, "*")
+                    gen.add_set_heap(t_pointer, t_capacity)
+
+                    gen.add_label([l_no_update])
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to element
+                    old_first_value = gen.new_temp()
+                    gen.add_get_heap(old_first_value, t_pointer)
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to next
+                    old_first_next = gen.new_temp()
+                    gen.add_get_heap(old_first_next, t_pointer)
+
+                    l_was_empty_1 = gen.new_label()
+                    gen.add_if(t_old_length, "0", "==", l_was_empty_1)
+                    # Reallocate old_first_value to other heap
+                    place = gen.new_temp()
+                    gen.add_expression(place, "H", "", "")
+                    gen.add_set_heap("H", old_first_value)
+                    gen.add_next_heap()
+                    # Reallocate old_first_next to other heap
+                    gen.add_set_heap("H", old_first_next)
+                    gen.add_next_heap()
+
+                    gen.add_label([l_was_empty_1])
+
+                    l_was_empty_2 = gen.new_label()
+                    gen.add_if(t_old_length, "0", "==", l_was_empty_2)
+
+                    # Set new next
+                    gen.add_set_heap(t_pointer, place)
+                    # Return to value pointer
+                    gen.add_label([l_was_empty_2])
+                    gen.add_expression(t_pointer, t_pointer, "1", "-")  # offsets to element
+                    gen.add_set_heap(t_pointer, element_to_push.value)
+
+                    #
+                    gen.add_goto(l_finished)
+                    # ##################################################################################################
+                    gen.add_label([l_index_not_zero])
+                    l_index_not_equal_length = gen.new_label()
+                    t_length = gen.new_temp()
+                    gen.add_get_heap(t_length, t_pointer)
+
+                    gen.add_if(counter, t_length, "!=", l_index_not_equal_length)
+                    gen.add_comment("---------------------------------------------------------------------------------")
+                    gen.add_comment("------------------------------------INDEX=LENGTH---------------------------------")
+                    gen.add_comment("---------------------------------------------------------------------------------")
+
+                    t_old_length = gen.new_temp()
+                    gen.add_get_heap(t_old_length, t_pointer)
+
+                    t_new_length = gen.new_temp()
+                    gen.add_expression(t_new_length, t_old_length, "1", "+")
+                    gen.add_set_heap(t_pointer, t_new_length)
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to capacity
+                    t_capacity = gen.new_temp()
+                    gen.add_get_heap(t_capacity, t_pointer)
+
+                    l_no_update = gen.new_label()
+                    l_not_zero = gen.new_label()
+                    gen.add_if(t_capacity, t_new_length, ">=", l_no_update)
+                    gen.add_if(t_capacity, "0", "!=", l_not_zero)
+                    gen.add_expression(t_capacity, "1", "", "")
+                    gen.add_set_heap(t_pointer, t_capacity)
+                    gen.add_goto(l_no_update)
+
+                    gen.add_label([l_not_zero])
+                    gen.add_expression(t_capacity, "2", t_capacity, "*")
+                    gen.add_set_heap(t_pointer, t_capacity)
+
+                    gen.add_label([l_no_update])
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to element
+
+                    l_loop = gen.new_label()
+                    l_arrived = gen.new_label()
+
+                    gen.add_expression(counter, counter, "1", "-")
+
+                    gen.add_label([l_loop])
+                    gen.add_if(counter, "0", "==", l_arrived)
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
+                    gen.add_get_heap(t_pointer, t_pointer)
+                    gen.add_expression(counter, counter, "1", "-")
+                    gen.add_goto(l_loop)
+
+                    gen.add_label([l_arrived])
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
+
+                    gen.add_set_heap("H", element_to_push.value)
+                    gen.add_set_heap(t_pointer, "H")
+                    gen.add_next_heap()
+                    gen.add_set_heap("H", "-1")
+                    gen.add_next_heap()
+
+                    gen.add_goto(l_finished)
+
+                    gen.add_comment("---------------------------------------------------------------------------------")
+                    gen.add_comment("------------------------------------MIDDLE CASE----------------------------------")
+                    gen.add_comment("---------------------------------------------------------------------------------")
+                    gen.add_label([l_index_not_equal_length])
+
+                    t_old_length = gen.new_temp()
+                    gen.add_get_heap(t_old_length, t_pointer)
+
+                    t_new_length = gen.new_temp()
+                    gen.add_expression(t_new_length, t_old_length, "1", "+")
+                    gen.add_set_heap(t_pointer, t_new_length)
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to capacity
+                    t_capacity = gen.new_temp()
+                    gen.add_get_heap(t_capacity, t_pointer)
+
+
+                    #TODO check for capacity==0 needed here? index is know not to be 0 and not to be out of bounds
+                    l_no_update = gen.new_label()
+                    l_not_zero = gen.new_label()
+                    gen.add_if(t_capacity, t_new_length, ">=", l_no_update)
+                    gen.add_if(t_capacity, "0", "!=", l_not_zero)
+                    gen.add_expression(t_capacity, "1", "", "")
+                    gen.add_set_heap(t_pointer, t_capacity)
+                    gen.add_goto(l_no_update)
+
+                    gen.add_label([l_not_zero])
+                    gen.add_expression(t_capacity, "2", t_capacity, "*")
+                    gen.add_set_heap(t_pointer, t_capacity)
+
+                    gen.add_label([l_no_update])
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to element
+
+                    l_index_not_out_of_bounds = gen.new_label()
+                    t_length = gen.new_temp()
+                    gen.add_get_heap(t_length, t_pointer)
+                    gen.add_if(counter, t_length, "<=", l_index_not_out_of_bounds)
+
+                    gen.add_print_message(f"vector.insert(i,v)::r->{self.line} c->{self.column}::"
+                                          f"ERROR:Index out of bounds")
+                    gen.add_error_return("9")
+
+                    gen.add_label([l_index_not_out_of_bounds])
+
+
+
+                    l_loop = gen.new_label()
+                    l_arrived = gen.new_label()
+
+                    t_before_next_ptr = gen.new_temp()
+
+                    gen.add_label([l_loop])
+                    gen.add_if(counter, "0", "==", l_arrived)
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
+                    gen.add_expression(t_before_next_ptr, t_pointer, "", "")
+                    gen.add_get_heap(t_pointer, t_pointer)
+                    gen.add_expression(counter, counter, "1", "-")
+                    gen.add_goto(l_loop)
+
+                    gen.add_label([l_arrived])
+
+                    t_before_next_value = gen.new_temp()
+                    gen.add_get_heap(t_before_next_value, t_before_next_ptr)
+                    # t_before_next_ptr needs to be new
+                    gen.add_set_heap(t_before_next_ptr, "H")
+                    # Create element of new Node
+                    gen.add_set_heap("H", element_to_push.value)
+                    gen.add_next_heap()
+                    # new+1 needs to be t_before_next_ptr
+                    gen.add_set_heap("H", t_before_next_value)
+                    gen.add_next_heap()
+                    gen.add_label([l_finished])
+
+                    # .insert returns the vector itself
+                    result.generator = gen
+                    return result
+
+                if self.function_id == "remove":
+
+                    gen = Generator()
+                    gen.add_comment("-------------------param func call::var_ref::vector remove-------------------")
+                    gen.combine_with(result.generator)
+
+                    if len(self.params) != 1:
+                        error_msg = f".remove() solo toma 1 argumento, {len(self.params)} fueron dados"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+                    # ##################################################################################################
+                    index = self.params[0].expr.execute(environment)
+                    gen.combine_with(index.generator)
+
+                    if index.expression_type not in [ExpressionType.INT, ExpressionType.USIZE]:
+                        error_msg = f"El indice de un vector en .insert(i,v) debe ser INT o USIZE"
+                        log_semantic_error(error_msg, self.line, self.column)
+                        raise SemanticError(error_msg, self.line, self.column)
+
+                    l_positive = gen.new_label()
+                    gen.add_if(index.value, "0", ">=", l_positive)
+                    gen.add_print_message(f"vector.insert(i,v)r->{self.line} c->{self.column}::ERROR: Negative index")
+                    gen.add_error_return("8")
+                    gen.add_label([l_positive])
+                    # ##################################################################################################
+                    l_finished = gen.new_label()
+                    l_index_not_zero = gen.new_label()
+
+                    counter = gen.new_temp()
+                    gen.add_expression(counter, index.value, "", "")
+
+                    gen.add_comment("---Pointer for value")
+                    t_pointer = gen.new_temp()
+                    gen.add_expression(t_pointer, result.value, "", "")
+
+                    gen.add_if(counter, "0", "!=", l_index_not_zero)
+                    gen.add_comment("---------------------------------------------------------------------------------")
+                    gen.add_comment("--------------------------------------INDEX ZERO---------------------------------")
+                    gen.add_comment("---------------------------------------------------------------------------------")
+
+                    t_old_length = gen.new_temp()
+                    gen.add_get_heap(t_old_length, t_pointer)
+                    t_new_length = gen.new_temp()
+                    gen.add_expression(t_new_length, t_old_length, "1", "-")
+                    gen.add_set_heap(t_pointer, t_new_length)
+
+                    l_length_not_zero = gen.new_label()
+
+                    gen.add_if(t_old_length, "0", "!=", l_length_not_zero)
+                    gen.add_print_message("REMOVE CALLED ON EMPTY VECTOR")
+                    gen.add_error_return("11")
+                    gen.add_label([l_length_not_zero])
+
+                    l_length_not_one = gen.new_label()
+                    gen.add_if(t_old_length, "1", "!=", l_length_not_one)
+
+                    gen.add_expression(t_pointer, t_pointer, "2", "+")  # offsets to element
+                    gen.add_set_heap(t_pointer, "-6969")
+
+                    gen.add_goto(l_finished)
+
+                    gen.add_label([l_length_not_one])
+
+                    gen.add_expression(t_pointer, t_pointer, "3", "+")  # offsets to next
+                    t_next_element_ptr = gen.new_temp()
+                    gen.add_get_heap(t_next_element_ptr, t_pointer)
+
+                    t_after_value = gen.new_temp()
+                    t_after_next = gen.new_temp()
+                    gen.add_get_heap(t_after_value, t_next_element_ptr)
+                    gen.add_expression(t_next_element_ptr, t_next_element_ptr, "1", "+")
+                    gen.add_get_heap(t_after_next, t_next_element_ptr)
+
+                    gen.add_set_heap(t_pointer, t_after_next)
+                    gen.add_expression(t_pointer, t_pointer, "1", "-")  # offsets to element
+                    gen.add_set_heap(t_pointer, t_after_value)
+                    gen.add_goto(l_finished)
+                    # ##################################################################################################
+                    gen.add_label([l_index_not_zero])
+                    l_index_not_equal_length = gen.new_label()
+                    t_length = gen.new_temp()
+                    gen.add_get_heap(t_length, t_pointer)
+
+                    t_max_index = gen.new_temp()
+                    gen.add_expression(t_max_index, t_length, "1", "-")
+
+                    gen.add_if(counter, t_max_index, "!=", l_index_not_equal_length)
+                    gen.add_comment("---------------------------------------------------------------------------------")
+                    gen.add_comment("------------------------------------INDEX=LENGTH---------------------------------")
+                    gen.add_comment("---------------------------------------------------------------------------------")
+
+                    gen.add_set_heap(t_pointer, t_max_index)
+                    gen.add_expression(t_pointer, t_pointer, "2", "+")  # offsets to element
+
+                    l_loop = gen.new_label()
+                    l_arrived = gen.new_label()
+                    gen.add_expression(counter, counter, "1", "-")
+                    gen.add_label([l_loop])
+                    gen.add_if(counter, "0", "==", l_arrived)
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
+                    gen.add_get_heap(t_pointer, t_pointer)
+                    gen.add_expression(counter, counter, "1", "-")
+                    gen.add_goto(l_loop)
+
+                    gen.add_label([l_arrived])
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
+                    gen.add_set_heap(t_pointer, "-1")
+
+                    # gen.add_set_heap("H", element_to_push.value)
+                    # gen.add_set_heap(t_pointer, "H")
+                    # gen.add_next_heap()
+                    # gen.add_set_heap("H", "-1")
+                    # gen.add_next_heap()
+
+                    gen.add_goto(l_finished)
+
+                    gen.add_comment("---------------------------------------------------------------------------------")
+                    gen.add_comment("------------------------------------MIDDLE CASE----------------------------------")
+                    gen.add_comment("---------------------------------------------------------------------------------")
+                    gen.add_label([l_index_not_equal_length])
+
+                    t_old_length = gen.new_temp()
+                    gen.add_get_heap(t_old_length, t_pointer)
+
+                    t_new_length = gen.new_temp()
+                    gen.add_expression(t_new_length, t_old_length, "1", "-")
+                    gen.add_set_heap(t_pointer, t_new_length)
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to capacity
+                    t_capacity = gen.new_temp()
+                    gen.add_get_heap(t_capacity, t_pointer)
+
+                    l_no_update = gen.new_label()
+                    l_not_zero = gen.new_label()
+                    gen.add_if(t_capacity, t_new_length, ">=", l_no_update)
+                    gen.add_if(t_capacity, "0", "!=", l_not_zero)
+                    gen.add_expression(t_capacity, "1", "", "")
+                    gen.add_set_heap(t_pointer, t_capacity)
+                    gen.add_goto(l_no_update)
+
+                    gen.add_label([l_not_zero])
+                    gen.add_expression(t_capacity, "2", t_capacity, "*")
+                    gen.add_set_heap(t_pointer, t_capacity)
+
+                    gen.add_label([l_no_update])
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to element
+
+                    l_index_not_out_of_bounds = gen.new_label()
+                    gen.add_if(counter, t_old_length, "<", l_index_not_out_of_bounds)
+
+                    gen.add_print_message(f"vector.remove(i)::r->{self.line} c->{self.column}::"
+                                          f"ERROR:Index out of bounds")
+                    gen.add_error_return("9")
+
+                    gen.add_label([l_index_not_out_of_bounds])
+
+                    l_loop = gen.new_label()
+                    l_arrived = gen.new_label()
+
+                    t_before_next_ptr = gen.new_temp()
+
+                    gen.add_label([l_loop])
+                    gen.add_if(counter, "0", "==", l_arrived)
+
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
+                    gen.add_expression(t_before_next_ptr, t_pointer, "", "")
+                    gen.add_get_heap(t_pointer, t_pointer)  # goto element of next
+                    gen.add_expression(counter, counter, "1", "-")
+                    gen.add_goto(l_loop)
+
+                    gen.add_label([l_arrived])
+
+                    t_removed_element_value = gen.new_temp()
+                    gen.add_get_heap(t_removed_element_value, t_pointer)
+
+                    t_next_ptr_value = gen.new_temp()
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
+                    gen.add_get_heap(t_next_ptr_value, t_pointer)
+
+                    gen.add_set_heap(t_before_next_ptr, t_next_ptr_value)
+
+                    gen.add_label([l_finished])
+                    # .remove returns the removed element
+
+                    if result.capacity[0] != 1:
+
+                    # TODO check for booleans
+                        return ValueTuple(value=t_removed_element_value, expression_type=result.expression_type,
+                                          is_mutable=result.is_mutable, generator=gen, content_type=result.content_type,
+                                          capacity=[result.capacity[0] - 1], is_tmp=True, true_label=[], false_label=[])
+
+                    a = ValueTuple(value=t_removed_element_value, expression_type=result.content_type,
+                                      is_mutable=result.is_mutable, generator=gen, content_type=result.content_type,
+                                      capacity=None, is_tmp=True, true_label=[], false_label=[])
+                    return a
+
 
             if result.expression_type == ExpressionType.ARRAY:
                 if self.function_id == "to_string":

@@ -32,6 +32,8 @@ from instructions.return_i import ReturnI
 
 from instructions.vector_declaration import VectorDeclaration
 
+from instructions.expression_as_instruction import ExpressionAsInstruction
+
 # ################################EXPRESSIONS#########################################
 from element_types.arithmetic_type import ArithmeticType
 from element_types.logic_type import LogicType
@@ -56,7 +58,6 @@ start = 'marian'
 # start = 'array_type'
 
 precedence = (
-    # TODO uncomment respectively
     ('left', 'LOGIC_OR'),
     ('left', 'LOGIC_AND'),
     # needs parenthesis according to rust
@@ -122,6 +123,17 @@ def p_no_semicolon_instruction(p):  # TODO all added to p_instruction should be 
     """
     p[0] = p[1]
 
+def p_expr_as_inst(p):
+    """instruction : expression SEMICOLON"""
+    if isinstance(p[1], ParameterFunctionCallE):
+        p[0] = ExpressionAsInstruction(p[1], p.lineno(2), -1)
+        return
+    reason = f'Expression-as-instruction inesperada.'
+    global_config.log_syntactic_error(reason, p.lineno, -1)
+
+    print(f"next token is {parser.token()}")
+    print(f"2nd next token is {parser.token()}")
+    raise SyntacticError(reason, p.lineno, -1)
 
 # ###########################################VECTOR VARIABLE DECLARATION ###############################################
 def p_vec_declaration_1(p):
