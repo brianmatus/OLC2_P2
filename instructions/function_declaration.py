@@ -4,7 +4,7 @@ import global_config
 from returns.exec_return import ExecReturn
 from abstract.instruction import Instruction
 from element_types.c_expression_type import ExpressionType
-from elements.c_env import Environment, TransferType
+from elements.c_env import Environment, TransferInstruction, TransferType
 from elements.id_tuple import IDTuple
 from element_types.array_def_type import ArrayDefType
 
@@ -109,8 +109,10 @@ class FunctionDeclaration(Instruction):
         # final_generator.add_expression("P", "P", env.size, "+")
 
         exit_label = final_generator.new_label()
-        from elements.c_env import TransferInstruction
-        self.environment.transfer_control = TransferInstruction(TransferType.RETURN, exit_label)
+        if self.return_type == ExpressionType.VOID:
+            self.environment.transfer_control.append(TransferInstruction(TransferType.RETURN, exit_label, False))
+        else:
+            self.environment.transfer_control.append(TransferInstruction(TransferType.RETURN, exit_label, True))
 
         self.environment.return_type = self.return_type
         final_generator.add_comment(f"-----{self.function_id} Instructions-----")

@@ -31,74 +31,7 @@ function_call_list: dict = {}
 
 main_environment = None  # Type Environment. Due to circular import this is set in main
 
-# def generate_symbol_table(instruction_set, env_name: str) -> List[List[str]]:
-#     table: List[List[str]] = []
 #
-#     for instruction in instruction_set:
-#         match type(instruction).__name__:
-#             case "Declaration":
-#                 if instruction.expression_type is not None:
-#                     table.append([instruction.variable_id, "Variable", instruction.expression_type.name, env_name,
-#                                   str(instruction.line), str(instruction.column)])
-#                 else:
-#                     table.append([instruction.variable_id, "Variable", "-", env_name,
-#                                   str(instruction.line), str(instruction.column)])
-#
-#
-#             case "ArrayDeclaration":
-#                 if instruction.var_type is not None:
-#
-#                     table.append([instruction.variable_id, "Variable[]", instruction.var_type.name, env_name,
-#                                   str(instruction.line), str(instruction.column)])
-#                 else:
-#                     table.append([instruction.variable_id, "Variable[]", "-", env_name,
-#                                   str(instruction.line), str(instruction.column)])
-#
-#             case "VectorDeclaration":
-#                 table.append([instruction.variable_id, "Variable Vec<>", instruction.var_type.name, env_name,
-#                               str(instruction.line), str(instruction.column)])
-#
-#             case "FunctionDeclaration":
-#                 table.append([instruction.variable_id, "Function Declaration", instruction.return_type.name, env_name,
-#                               str(instruction.line), str(instruction.column)])
-#                 function_table = generate_symbol_table(instruction.instructions, env_name + "->" + instruction.variable_id)
-#                 table = table + function_table
-#
-#             case "Conditional":
-#                 conditional_id = random_hex_color_code()
-#                 for clause in instruction.clauses:
-#                     random_id = random_hex_color_code()
-#                     conditional_table = generate_symbol_table(clause.instructions,
-#                                                               env_name+"Conditional"+conditional_id+":"+random_id)
-#                     table = table + conditional_table
-#
-#             case "MatchI":
-#                 conditional_id = random_hex_color_code()
-#                 for clause in instruction.clauses:
-#                     random_id = random_hex_color_code()
-#                     conditional_table = generate_symbol_table(clause.instructions,
-#                                                               env_name + "Match" + conditional_id + ":" + random_id)
-#                     table = table + conditional_table
-#
-#             case "WhileI":
-#                 while_id = random_hex_color_code()
-#                 while_table = generate_symbol_table(instruction.instructions, env_name + "While"+while_id)
-#                 table = table + while_table
-#
-#             case "LoopI":
-#                 loop_id = random_hex_color_code()
-#                 loop_table = generate_symbol_table(instruction.instructions, env_name + "While" + loop_id)
-#                 table = table + loop_table
-#
-#             case "ForInI":
-#                 for_id = random_hex_color_code()
-#                 table.append([instruction.looper, "Variable", "-", env_name + "->For" + for_id,
-#                               str(instruction.line), str(instruction.column)])
-#                 for_table = generate_symbol_table(instruction.instructions, env_name + "While" + for_id)
-#                 table = table + for_table
-#
-#
-#     return table
 
 
 def array_type_to_dimension_dict_and_type(arr_type) -> Tuple[dict, ExpressionType]:
@@ -276,3 +209,95 @@ def get_unique_number() -> int:
 
 def random_hex_color_code() -> str:
     return "#" + secrets.token_hex(2)
+
+
+def find_loop_break_type(instruction_set) -> ExpressionType:
+
+    for instruction in instruction_set:
+        a = type(instruction).__name__
+        match a:
+            case "BreakI":
+                return instruction.expr.expression_type
+
+            case "Conditional":
+                for clause in instruction.clauses:
+                    the_type = find_loop_break_type(clause.instructions)
+                    if the_type is not None:
+                        return the_type
+
+            case "MatchI":
+                for clause in instruction.clauses:
+                    the_type = find_loop_break_type(clause.instructions)
+                    if the_type is not None:
+                        return the_type
+
+    return None
+
+# def generate_symbol_table(instruction_set, env_name: str) -> List[List[str]]:
+#     table: List[List[str]] = []
+#
+#     for instruction in instruction_set:
+#         match type(instruction).__name__:
+#             case "Declaration":
+#                 if instruction.expression_type is not None:
+#                     table.append([instruction.variable_id, "Variable", instruction.expression_type.name, env_name,
+#                                   str(instruction.line), str(instruction.column)])
+#                 else:
+#                     table.append([instruction.variable_id, "Variable", "-", env_name,
+#                                   str(instruction.line), str(instruction.column)])
+#
+#
+#             case "ArrayDeclaration":
+#                 if instruction.var_type is not None:
+#
+#                     table.append([instruction.variable_id, "Variable[]", instruction.var_type.name, env_name,
+#                                   str(instruction.line), str(instruction.column)])
+#                 else:
+#                     table.append([instruction.variable_id, "Variable[]", "-", env_name,
+#                                   str(instruction.line), str(instruction.column)])
+#
+#             case "VectorDeclaration":
+#                 table.append([instruction.variable_id, "Variable Vec<>", instruction.var_type.name, env_name,
+#                               str(instruction.line), str(instruction.column)])
+#
+#             case "FunctionDeclaration":
+#                 table.append([instruction.variable_id, "Function Declaration", instruction.return_type.name, env_name,
+#                               str(instruction.line), str(instruction.column)])
+#                 function_table = generate_symbol_table(instruction.instructions, env_name + "->" + instruction.variable_id)
+#                 table = table + function_table
+#
+#             case "Conditional":
+#                 conditional_id = random_hex_color_code()
+#                 for clause in instruction.clauses:
+#                     random_id = random_hex_color_code()
+#                     conditional_table = generate_symbol_table(clause.instructions,
+#                                                               env_name+"Conditional"+conditional_id+":"+random_id)
+#                     table = table + conditional_table
+#
+#             case "MatchI":
+#                 conditional_id = random_hex_color_code()
+#                 for clause in instruction.clauses:
+#                     random_id = random_hex_color_code()
+#                     conditional_table = generate_symbol_table(clause.instructions,
+#                                                               env_name + "Match" + conditional_id + ":" + random_id)
+#                     table = table + conditional_table
+#
+#             case "WhileI":
+#                 while_id = random_hex_color_code()
+#                 while_table = generate_symbol_table(instruction.instructions, env_name + "While"+while_id)
+#                 table = table + while_table
+#
+#             case "LoopI":
+#                 loop_id = random_hex_color_code()
+#                 loop_table = generate_symbol_table(instruction.instructions, env_name + "While" + loop_id)
+#                 table = table + loop_table
+#
+#             case "ForInI":
+#                 for_id = random_hex_color_code()
+#                 table.append([instruction.looper, "Variable", "-", env_name + "->For" + for_id,
+#                               str(instruction.line), str(instruction.column)])
+#                 for_table = generate_symbol_table(instruction.instructions, env_name + "While" + for_id)
+#                 table = table + for_table
+#
+#
+#     return table

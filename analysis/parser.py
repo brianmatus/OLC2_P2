@@ -28,11 +28,16 @@ from instructions.conditional import Conditional
 from instructions.conditional_match import MatchI
 from instructions.print_ln import PrintLN
 
+from instructions.loop_i import LoopI
+from instructions.while_i import WhileI
 from instructions.return_i import ReturnI
+from instructions.break_i import BreakI
+from instructions.continue_i import ContinueI
 
 from instructions.vector_declaration import VectorDeclaration
 
 from instructions.expression_as_instruction import ExpressionAsInstruction
+
 
 # ################################EXPRESSIONS#########################################
 from element_types.arithmetic_type import ArithmeticType
@@ -49,6 +54,7 @@ from expressions.match_expression import MatchExpression
 from expressions.func_call_expression import FunctionCallE
 from expressions.parameter_function_call import ParameterFunctionCallE
 from expressions.vector import VectorExpression
+from expressions.loop_e import LoopE
 
 tokens = lexer.tokens
 
@@ -102,7 +108,11 @@ def p_instruction(p):  # since all here are p[0] = p[1] (except void_inst) add a
     | println_inst SEMICOLON
     | match_statement
     | return_i SEMICOLON
+    | break_i SEMICOLON
+    | continue_i SEMICOLON
     | vector_declaration SEMICOLON
+    | while_i
+    | loop_i
     """
     p[0] = p[1]
 
@@ -118,10 +128,15 @@ def p_no_semicolon_instruction(p):  # TODO all added to p_instruction should be 
     | if_else_elseif
     | println_inst
     | match_statement
-    | return_i
+    | return_i SEMICOLON
+    | break_i SEMICOLON
+    | continue_i SEMICOLON
     | vector_declaration SEMICOLON
+    | while_i
+    | loop_i
     """
     p[0] = p[1]
+
 
 def p_expr_as_inst(p):
     """instruction : expression SEMICOLON"""
@@ -134,6 +149,45 @@ def p_expr_as_inst(p):
     print(f"next token is {parser.token()}")
     print(f"2nd next token is {parser.token()}")
     raise SyntacticError(reason, p.lineno, -1)
+
+# ###############################################BREAK STATEMENT########################################################
+def p_break_i_1(p):
+    """break_i : BREAK expression"""
+    p[0] = BreakI(p[2], p.lineno(1), -1)
+
+
+def p_break_i_2(p):
+    """break_i : BREAK"""
+    p[0] = p[0] = BreakI(None, p.lineno(1), -1)
+
+
+# #################################################CONTINUE STATEMENT###################################################
+# def p_continue_i_1(p):
+#     """continue_i : CONTINUE expression"""
+#     p[0] = ContinueI(p[2], p.lineno(1), -1)
+
+
+def p_continue_i_2(p):
+    """continue_i : CONTINUE"""
+    p[0] = ContinueI(None, p.lineno(1), -1)
+
+
+# ###############################################LOOP STATEMENT#########################################################
+def p_loop_i(p):
+    """loop_i : LOOP KEY_O instructions KEY_C"""
+    p[0] = LoopI(p[3], p.lineno(1), -1)
+
+
+def p_loop_e(p):
+    """expression : LOOP KEY_O instructions KEY_C"""
+    p[0] = LoopE(p[3], p.lineno(1), -1)
+
+
+# ##############################################WHILE STATEMENT#########################################################
+def p_while_i(p):
+    """while_i : WHILE expression KEY_O instructions KEY_C"""
+    p[0] = WhileI(p[2], p[4], p.lineno(1), -1)
+
 
 # ###########################################VECTOR VARIABLE DECLARATION ###############################################
 def p_vec_declaration_1(p):

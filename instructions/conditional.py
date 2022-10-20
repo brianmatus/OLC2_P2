@@ -54,8 +54,7 @@ class Conditional(Instruction):
 
             if result.expression_type is not ExpressionType.BOOL:
                 error_msg = f"La expresión de un if debe ser de tipo booleano." \
-                            f"(Se obtuvo {result.value}->{result.expression_type})."
-
+                            f"(Se obtuvo ->{result.expression_type})."
                 log_semantic_error(error_msg, self.line, self.column)
                 raise SemanticError(error_msg, self.line, self.column)
 

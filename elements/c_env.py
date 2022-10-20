@@ -56,9 +56,10 @@ TransferType = Enum('ElementType',
 
 
 class TransferInstruction:
-    def __init__(self, transfer_type: TransferType, label_to_jump: str):
+    def __init__(self, transfer_type: TransferType, label_to_jump: str, with_value: bool):
         self.transfer_type = transfer_type
         self.label_to_jump = label_to_jump
+        self.with_value = with_value
 
 
 class Environment:
@@ -69,7 +70,7 @@ class Environment:
         self.size = 0
         self.children_environment = []
 
-        self.transfer_control: TransferInstruction = TransferInstruction(TransferType.DEFAULT_INVALID, "invalid_jump")
+        self.transfer_control: List[TransferInstruction] = []
         self.return_type: ExpressionType = return_type
 
         if self.parent_environment is not None:
@@ -197,10 +198,16 @@ class Environment:
 
         return the_symbol
 
-    def get_transfer_control_label(self, transfer_type: TransferType, line: int, column: int)\
+    def get_transfer_control_label(self, transfer_type: TransferType, with_value: bool, line: int, column: int)\
             -> Tuple[str, ExpressionType]:
-        if self.transfer_control.transfer_type == transfer_type:
-            return self.transfer_control.label_to_jump, self.return_type
+
+        for trans in self.transfer_control:
+            if trans.transfer_type == transfer_type:
+                if trans.with_value == with_value:
+                    return trans.label_to_jump, self.return_type
+                error_msg = f'Instrucción {transfer_type.name} con retorno de valor no valido'
+                global_config.log_semantic_error(error_msg, line, column)
+                raise SemanticError(error_msg, line, column)
 
         # hit top
         if self.parent_environment is None:
@@ -208,7 +215,7 @@ class Environment:
             global_config.log_semantic_error(error_msg, line, column)
             raise SemanticError(error_msg, line, column)
 
-        return self.parent_environment.get_transfer_control_label(transfer_type, line, column)
+        return self.parent_environment.get_transfer_control_label(transfer_type, with_value, line, column)
 
     def remove_child(self, child):  # child: Environment
         self.children_environment = list(filter(lambda p: p is not child, self.children_environment))

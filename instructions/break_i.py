@@ -11,16 +11,18 @@ from errors.semantic_error import SemanticError
 from generator import Generator
 
 
-class ReturnI(Instruction):
+class BreakI(Instruction):
     def __init__(self, expr: Union[Expression, None], line: int, column: int):
         super().__init__(line, column)
         self.expr = expr
 
     def execute(self, env: Environment) -> ExecReturn:
         generator = Generator()
-        generator.add_comment(f"-------------------------------Return Instruction-------------------------------")
+        generator.add_comment(f"-------------------------------BREAK Instruction-------------------------------")
 
-        where_to_jump, the_type = env.get_transfer_control_label(TransferType.RETURN, self.expr is not None,
+        t = self.expr is not None
+
+        where_to_jump, the_type = env.get_transfer_control_label(TransferType.BREAK, t,
                                                                  self.line, self.column)
 
         if self.expr is None:
@@ -41,10 +43,10 @@ class ReturnI(Instruction):
             return ExecReturn(generator=generator,
                               propagate_method_return=True, propagate_continue=False, propagate_break=False)
 
-        if the_type != result.expression_type:
-            error_msg = f'Se ha devuelto un tipo de dato incorrecto {the_type.name} <=> {result.expression_type.name}'
-            global_config.log_semantic_error(error_msg, self.line, self.column)
-            raise SemanticError(error_msg, self.line, self.column)
+        # if the_type != result.expression_type:
+        #     error_msg = f'Se ha devuelto un tipo de dato incorrecto {the_type.name} <=> {result.expression_type.name}'
+        #     global_config.log_semantic_error(error_msg, self.line, self.column)
+        #     raise SemanticError(error_msg, self.line, self.column)
 
 
         generator.combine_with(result.generator)

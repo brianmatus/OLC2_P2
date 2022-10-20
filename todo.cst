@@ -1,23 +1,12 @@
 check for correct transfer place in corresponding instructions (non have been implemented yet, return should be the first one)
 
-function-arg-arrays with no defined size make a huuuuge problem
-|--> stack_base + n for every nth-dimension of it. if func declaration detects empty dimension, set value to this one.
-     For this, manual increment of environment is necessary.
-
-
 reset t2 (func_has_returned) to 0 after catching the value
 return of booleans? idk
 
 
 
-expresion instance of function call (or even println function) should not matter in how its handled by it.
-In a matter of fact, ArrayExpresion should be generating it's own generator code and not rely on the declaration
-to have its first approach to actual code execution. This flaw was introduced to thinking recursive ArrayExpr
-will interfeer with generation. But only most-outer player has it's execute method called. Maybe redo this?
-To late for it? idk
-
-
-
+return value of vect.remove(i) of multilevel vector not working
+(ie. a = Vec<Vec<i64>>); b = a.remove(0). b is not set correctly
 
 
 
@@ -31,3 +20,11 @@ encode file as utf-8? only literals? python 3 already handles utf-8? idk man im 
 Check for arrays passed to func calls
 Check for vectors passed to func calls
 Check for function return type
+
+
+expresion instance of function call (or even println function) should not matter in how its handled by it.
+In a matter of fact, ArrayExpresion should be generating it's own generator code and not rely on the declaration
+to have its first approach to actual code execution. This flaw was introduced to thinking recursive ArrayExpr
+will interfeer with generation. But only most-outer player has it's execute method called. Maybe redo this?
+To late for it? idk
+
