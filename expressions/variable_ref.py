@@ -62,6 +62,22 @@ class VariableReference(Expression):
             generator.add_comment("var_ref::Get the symbol stack value")
             generator.add_get_stack(heap_address, ref_position)
 
+            if array_symbol.dimensions[1] is None:
+                dims = []
+                offset = 1
+                for _ in range(len(array_symbol.dimensions)):
+                    t_dim = generator.new_temp()
+                    generator.add_expression(t_dim, ref_position, str(offset), "+")
+                    generator.add_get_stack(t_dim, t_dim)
+                    dims.append(t_dim)
+                    offset += 1
+
+                return ValueTuple(value=heap_address, expression_type=ExpressionType.ARRAY,
+                                  is_mutable=array_symbol.is_mutable, generator=generator,
+                                  content_type=array_symbol.symbol_type,
+                                  capacity=dims,
+                                  is_tmp=True, true_label=[], false_label=[])
+
             return ValueTuple(value=heap_address, expression_type=ExpressionType.ARRAY,
                               is_mutable=array_symbol.is_mutable, generator=generator,
                               content_type=array_symbol.symbol_type, capacity=list(array_symbol.dimensions.values()),

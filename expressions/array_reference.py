@@ -70,8 +70,6 @@ class ArrayReference(Expression):
                 for i in range(len(dimensions)):
                     generator.add_if(dimensions[i], the_symbol.dimensions[i + 1], ">=", error_label)
 
-                    if isinstance(dimensions[i], str):
-                        continue
 
                     if dimensions[i] > the_symbol.dimensions[i + 1]:
                         error_msg = f'Las dimensiones del array son menores a las ingresadas'
@@ -86,23 +84,18 @@ class ArrayReference(Expression):
 
             generator.add_label([exit_label])
 
-        generator.add_comment("Mapping multidimensional indexes to single index (row major)")
+        generator.add_comment("array_ref::Mapping multidimensional indexes to single index (row major)")
         p = generator.new_temp()
         generator.add_expression(p, "0", "", "")
 
         p_deepness = environment.get_variable_p_deepness(self.variable_id, 0)
         stack_value = generator.new_temp()
         generator.add_expression(stack_value, "P", str(0 - p_deepness), "+")
-
-
-
         # #######################################Define index of access by row-major####################################
 
         # Sliced array, r will have to be calculated in 3ac
         coefficients = list(the_symbol.dimensions.values())
         if coefficients[0] is None:
-            # TODO to be implemented
-
             for i in range(0, len(coefficients)):
                 index = generator.new_temp()
                 generator.add_expression(index, stack_value, str(i+1), "+")

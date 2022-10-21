@@ -41,24 +41,28 @@ class Declaration(Instruction):
 
         # Do we have an impostor?
         if isinstance(self.expression, ParameterFunctionCallE):
-            if isinstance(self.expression.variable_id, str):
-                the_symbol: Symbol = env.get_variable(self.expression.variable_id)
+            if self.expression.function_id != "len":
+                if isinstance(self.expression.variable_id, str):
+                    the_symbol: Symbol = env.get_variable(self.expression.variable_id)
 
-                if the_symbol is not None:
-                    if isinstance(the_symbol, ArraySymbol):
-                        correct_one = ArrayDeclaration(self.variable_id, None, self.expression, self.is_mutable,
-                                                       self.line, self.column)
-                        return correct_one.execute(env)
 
-                    if isinstance(the_symbol, VectorSymbol):
+                    if the_symbol is not None:
+                        if isinstance(the_symbol, ArraySymbol):
 
-                        # TODO a flag may be necessary to avoid double execution and create unnecessary tmps
-                        # This flag should exist here and passed in VectorDeclaration
-                        executed_result = self.expression.execute(env)
 
-                        if executed_result.expression_type == ExpressionType.VECTOR:
-                            return VectorDeclaration(self.variable_id, None, self.expression, self.is_mutable,
-                                                     self.line, self.column).execute(env)
+                            correct_one = ArrayDeclaration(self.variable_id, None, self.expression, self.is_mutable,
+                                                           self.line, self.column)
+                            return correct_one.execute(env)
+
+                        if isinstance(the_symbol, VectorSymbol):
+
+                            # TODO a flag may be necessary to avoid double execution and create unnecessary tmps
+                            # This flag should exist here and passed in VectorDeclaration
+                            executed_result = self.expression.execute(env)
+
+                            if executed_result.expression_type == ExpressionType.VECTOR:
+                                return VectorDeclaration(self.variable_id, None, self.expression, self.is_mutable,
+                                                         self.line, self.column).execute(env)
 
 
         # Do we have an impostor?

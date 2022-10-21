@@ -12,7 +12,7 @@ class Assigment(Instruction):
         super().__init__(line, column)
         self.variable_id: str = variable_id
         self.expression: Expression = expression
-        print(f"Instance of assignment with id {variable_id}")
+        # print(f"Instance of assignment with id {variable_id}")
 
     def execute(self, env: Environment) -> ExecReturn:
 

@@ -97,7 +97,15 @@ class ArrayAssignment(Instruction):
         error_label = generator.new_label()
         exit_label = generator.new_label()
         for i in range(len(dimensions)):
+
+            if the_symbol.dimensions[i+1] is None:
+                continue
+
             generator.add_if(dimensions[i], the_symbol.dimensions[i + 1], ">=", error_label)
+
+            if isinstance(dimensions[i], str):
+                continue
+
             if dimensions[i] > the_symbol.dimensions[i + 1]:
                 error_msg = f'Las dimensiones del array son menores a las ingresadas'
                 log_semantic_error(error_msg, self.line, self.column)
@@ -156,26 +164,52 @@ class ArrayAssignment(Instruction):
         # Define index of access by row-major
         coefficients = list(the_symbol.dimensions.values())
 
-        generator.add_comment("Mapping multidimensional indexes to single index (row major)")
+        generator.add_comment("array_ref::Mapping multidimensional indexes to single index (row major)")
         p = generator.new_temp()
         generator.add_expression(p, "0", "", "")
-        for i in range(len(dimensions)-1):
-            r = math.prod(coefficients[i+1:])
-            partial = generator.new_temp()
-            generator.add_expression(partial, str(r), dimensions[i], "*")
-            generator.add_expression(p, p, partial, "+")
 
-        generator.add_expression(p, p, dimensions[len(dimensions)-1], "+")
-
+        p_deepness = env.get_variable_p_deepness(self.variable_id, 0)
         stack_value = generator.new_temp()
-        generator.add_expression(stack_value, "P", the_symbol.heap_position, "+")
+        generator.add_expression(stack_value, "P", str(0 - p_deepness), "+")
+        # #######################################Define index of access by row-major####################################
+
+        # Sliced array, r will have to be calculated in 3ac
+        coefficients = list(the_symbol.dimensions.values())
+        if coefficients[0] is None:
+            for i in range(0, len(coefficients)):
+                index = generator.new_temp()
+                generator.add_expression(index, stack_value, str(i + 1), "+")
+                generator.add_get_stack(index, index)
+                coefficients[i] = index
+
+            for i in range(len(dimensions)):
+
+                r = generator.new_temp()
+                generator.add_expression(r, "1", "", "")
+                for coefficient in coefficients[i + 1:]:
+                    generator.add_expression(r, r, coefficient, "*")
+
+                partial = generator.new_temp()
+                generator.add_expression(partial, r, dimensions[i], "*")
+                generator.add_expression(p, p, partial, "+")
+
+        else:
+            # Normal definition, size is known in compile time
+            # for i in range(len(dimensions) - 1):
+            for i in range(len(dimensions)):
+                r = math.prod(coefficients[i + 1:])
+                partial = generator.new_temp()
+                generator.add_expression(partial, str(r), dimensions[i], "*")
+                generator.add_expression(p, p, partial, "+")
+
+            # generator.add_expression(p, p, dimensions[len(dimensions) - 1], "+")
 
         base_heap_address = generator.new_temp()
         generator.add_get_stack(base_heap_address, stack_value)
-
         final_heap_address = generator.new_temp()
-
         generator.add_expression(final_heap_address, base_heap_address, p, "+")
+
+        # ##############################################################################################################
 
         generator.add_set_heap(final_heap_address, expr.value)
 
