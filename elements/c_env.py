@@ -198,13 +198,21 @@ class Environment:
 
         return the_symbol
 
-    def get_transfer_control_label(self, transfer_type: TransferType, with_value: bool, line: int, column: int)\
-            -> Tuple[str, ExpressionType]:
+    def get_transfer_control_label(self, transfer_type: TransferType, with_value: bool, line: int, column: int,
+                                   p_revert=0, first=True)\
+            -> Tuple[str, ExpressionType, int]:
 
         for trans in self.transfer_control:
             if trans.transfer_type == transfer_type:
                 if trans.with_value == with_value:
-                    return trans.label_to_jump, self.return_type
+                    if transfer_type == TransferType.RETURN:
+                        if first:
+                            return trans.label_to_jump, self.return_type, p_revert
+                        return trans.label_to_jump, self.return_type, p_revert+self.size
+
+                    if first:
+                        return trans.label_to_jump, self.return_type, p_revert
+                    return trans.label_to_jump, self.return_type, p_revert+self.size
                 error_msg = f'Instrucción {transfer_type.name} con retorno de valor no valido'
                 global_config.log_semantic_error(error_msg, line, column)
                 raise SemanticError(error_msg, line, column)
@@ -215,7 +223,12 @@ class Environment:
             global_config.log_semantic_error(error_msg, line, column)
             raise SemanticError(error_msg, line, column)
 
-        return self.parent_environment.get_transfer_control_label(transfer_type, with_value, line, column)
+        if first:
+            return self.parent_environment.get_transfer_control_label(transfer_type, with_value, line, column,
+                                                                      p_revert, first=False)
+
+        return self.parent_environment.get_transfer_control_label(transfer_type, with_value,
+                                                                  line, column, p_revert + self.size, first=False)
 
     def remove_child(self, child):  # child: Environment
         self.children_environment = list(filter(lambda p: p is not child, self.children_environment))

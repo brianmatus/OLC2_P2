@@ -33,6 +33,7 @@ from instructions.while_i import WhileI
 from instructions.return_i import ReturnI
 from instructions.break_i import BreakI
 from instructions.continue_i import ContinueI
+from instructions.for_in_i import ForInI, ForInRanged
 
 from instructions.vector_declaration import VectorDeclaration
 
@@ -113,6 +114,7 @@ def p_instruction(p):  # since all here are p[0] = p[1] (except void_inst) add a
     | vector_declaration SEMICOLON
     | while_i
     | loop_i
+    | for_in_i
     """
     p[0] = p[1]
 
@@ -128,12 +130,13 @@ def p_no_semicolon_instruction(p):  # TODO all added to p_instruction should be 
     | if_else_elseif
     | println_inst
     | match_statement
-    | return_i SEMICOLON
-    | break_i SEMICOLON
-    | continue_i SEMICOLON
-    | vector_declaration SEMICOLON
+    | return_i
+    | break_i
+    | continue_i
+    | vector_declaration
     | while_i
     | loop_i
+    | for_in_i
     """
     p[0] = p[1]
 
@@ -149,6 +152,18 @@ def p_expr_as_inst(p):
     print(f"next token is {parser.token()}")
     print(f"2nd next token is {parser.token()}")
     raise SyntacticError(reason, p.lineno, -1)
+
+
+# ################################################FOR STATEMENT#########################################################
+def p_for_in_i_1(p):
+    """for_in_i : FOR ID IN expression KEY_O instructions KEY_C"""
+    p[0] = ForInI(p[2], p[4], p[6], p.lineno(1), -1)
+
+
+def p_for_in_i_2(p):
+    """for_in_i : FOR ID IN expression DOT DOT expression KEY_O instructions KEY_C"""
+    p[0] = ForInI(p[2], ForInRanged(p[4], p[7]), p[9], p.lineno(1), -1)
+
 
 # ###############################################BREAK STATEMENT########################################################
 def p_break_i_1(p):

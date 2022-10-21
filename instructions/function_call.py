@@ -61,7 +61,7 @@ class FunctionCallI(Instruction):
         arg_position = ""
 
         if len(self.params) != 0:
-            final_generator.add_comment("-----Temporal new P for setting up func args in new env-----")
+            final_generator.add_comment("-----f_call:Temporal new P for setting up func args in new env-----")
             delta_p = final_generator.new_temp()
             final_generator.add_expression(delta_p, "P", env.size, "+")
             arg_position = final_generator.new_temp()
@@ -153,18 +153,26 @@ class FunctionCallI(Instruction):
                             final_generator.add_expression(arg_position, delta_p, str(i + offset), "+")
                             final_generator.add_set_stack(arg_position, str(given.capacity[key-1]))
 
-        final_generator.add_comment("-----Update P for a new environment-----")
+        final_generator.add_comment("-----f_call:Update P for a new environment-----")
         final_generator.add_expression("P", "P", env.size, "+")
 
-        final_generator.add_comment(f"-----Where should the func return once completed? To {self.comeback_label}-----")
-        final_generator.add_expression("t1", str(self.turn), "", "")
+        # final_generator.add_comment(f"-----f_call:Where should the func return once completed? To {self.comeback_label}-----")
+        # final_generator.add_expression("t1", str(self.turn), "", "")
 
-        final_generator.add_goto(func.start_label)
+        # final_generator.add_goto(func.start_label)
+        final_generator.add_func_call(func.function_id)
 
-        final_generator.add_label([self.comeback_label])
-        final_generator.add_comment("-----Revert P for a previous environment-----")
+        l_not_error = final_generator.new_label()
+        final_generator.add_if("t1", "0", "==", l_not_error)
+        if self.function_id == "main":
+            final_generator.code.append("return t1;")
+        else:
+            final_generator.add_error_return("")
+        final_generator.add_label([l_not_error])
+
+        final_generator.add_comment("-----f_call:Revert P for a previous environment-----")
         final_generator.add_expression("P", "P", env.size, "-")
-        final_generator.add_comment("-----Revert func_has_returned-----")
+        final_generator.add_comment("-----f_call:Revert func_has_returned-----")
         final_generator.add_expression("t2", "0", "", "")
         return ExecReturn(final_generator, False, False, False)
 

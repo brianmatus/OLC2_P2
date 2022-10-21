@@ -38,7 +38,8 @@ class FunctionCallE(Expression):
         #                   capacity=fn.return_capacity, is_tmp=True,
         #                   true_label=fn.return_true_label, false_label=fn.return_false_label)
 
-
-        return ValueTuple("t0", fn.return_type, True, result.generator, fn.return_content_type,
+        t_r = result.generator.new_temp()
+        result.generator.add_expression(t_r, "t0", "", "")
+        return ValueTuple(t_r, fn.return_type, True, result.generator, fn.return_content_type,
                           capacity=fn.return_capacity, is_tmp=True,
                           true_label=[], false_label=[])

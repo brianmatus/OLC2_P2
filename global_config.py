@@ -17,7 +17,7 @@ semantic_error_list: List[SemanticError] = []
 tmp_symbol_table = []
 
 # t0 is reserved for the return value of functions
-# t1 is reserved for func_end_return_to integer
+# t1 is reserved for program_exit_code
 # t2 is reserved for func_has_returned
 tmp_i = 3
 label_i = 0
@@ -28,6 +28,9 @@ unique_counter = 0
 console_output: str = ""
 function_list: dict = {}  # func_name:str, func:func_decl
 function_call_list: dict = {}
+
+function_3ac_code = []
+
 
 main_environment = None  # Type Environment. Due to circular import this is set in main
 

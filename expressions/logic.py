@@ -54,8 +54,7 @@ class Logic(Expression):
 
         match self.logic_type:
             case LogicType.OPE_MORE:
-                generator = Generator()
-                generator.code = left.generator.code + right.generator.code
+                generator = left.generator.combine_with(right.generator)
                 true_label = generator.new_label()
                 false_label = generator.new_label()
 
@@ -70,9 +69,7 @@ class Logic(Expression):
                                   [true_label], [false_label])
 
             case LogicType.OPE_LESS:
-
-                generator = Generator()
-                generator.code = left.generator.code + right.generator.code
+                generator = left.generator.combine_with(right.generator)
                 true_label = generator.new_label()
                 false_label = generator.new_label()
 
@@ -87,8 +84,7 @@ class Logic(Expression):
                                   [true_label], [false_label])
 
             case LogicType.OPE_MORE_EQUAL:
-                generator = Generator()
-                generator.code = left.generator.code + right.generator.code
+                generator = left.generator.combine_with(right.generator)
                 true_label = generator.new_label()
                 false_label = generator.new_label()
 
@@ -103,9 +99,7 @@ class Logic(Expression):
                                   [true_label], [false_label])
 
             case LogicType.OPE_LESS_EQUAL:
-
-                generator = Generator()
-                generator.code = left.generator.code + right.generator.code
+                generator = left.generator.combine_with(right.generator)
                 true_label = generator.new_label()
                 false_label = generator.new_label()
 
@@ -120,8 +114,7 @@ class Logic(Expression):
                                   [true_label], [false_label])
 
             case LogicType.OPE_EQUAL:
-                generator = Generator()
-                generator.code = left.generator.code + right.generator.code
+                generator = left.generator.combine_with(right.generator)
                 true_label = generator.new_label()
                 false_label = generator.new_label()
 
@@ -136,8 +129,7 @@ class Logic(Expression):
                                   [true_label], [false_label])
 
             case LogicType.OPE_NEQUAL:
-                generator = Generator()
-                generator.code = left.generator.code + right.generator.code
+                generator = left.generator.combine_with(right.generator)
                 true_label = generator.new_label()
                 false_label = generator.new_label()
 
@@ -153,16 +145,14 @@ class Logic(Expression):
 
             ###########################################################
             case LogicType.LOGIC_OR:
-                generator = Generator()
-                generator.code = left.generator.code
+                generator = left.generator
                 generator.add_label(left.false_label)
                 generator.combine_with(right.generator)
                 return ValueTuple(None, ExpressionType.BOOL, False, generator, ExpressionType.BOOL, None, False,
                                   left.true_label + right.true_label, right.false_label)
 
             case LogicType.LOGIC_AND:
-                generator = Generator()
-                generator.code = left.generator.code
+                generator = left.generator
                 generator.add_label(left.true_label)
                 generator.combine_with(right.generator)
                 return ValueTuple(None, ExpressionType.BOOL, False, generator, ExpressionType.BOOL, None, False,

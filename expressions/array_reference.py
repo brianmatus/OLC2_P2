@@ -69,6 +69,10 @@ class ArrayReference(Expression):
             if the_symbol.dimensions[1] is not None:
                 for i in range(len(dimensions)):
                     generator.add_if(dimensions[i], the_symbol.dimensions[i + 1], ">=", error_label)
+
+                    if isinstance(dimensions[i], str):
+                        continue
+
                     if dimensions[i] > the_symbol.dimensions[i + 1]:
                         error_msg = f'Las dimensiones del array son menores a las ingresadas'
                         log_semantic_error(error_msg, self.line, self.column)

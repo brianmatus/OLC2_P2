@@ -25,19 +25,25 @@ class Generator:
 
     def set_as_final_code(self) -> str:
         self.add_main_enclosure()
+        self.code = global_config.function_3ac_code + self.code
         self.add_tmps_on_top()
         self.add_headers_on_top()
+
         return "\n".join(self.code)
 
     def combine_with(self, gen):  # gen: Generator
         self.code = self.code + gen.code[:]  # slice is ok? idk
-
+        self.tempList = self.tempList + gen.tempList[:]
+        return self
     # tmp
     def new_temp(self) -> str:
         tmp = "t" + str(global_config.tmp_i)
+        self.tempList.append(global_config.tmp_i)
         global_config.tmp_i += 1
 
-        self.tempList.append(global_config.tmp_i)
+        if tmp == "t18":
+            pass
+
         return tmp
 
     # Label
@@ -91,19 +97,26 @@ class Generator:
 
     # should be called after add_main_enclosure
     def add_tmps_on_top(self):
-        if global_config.tmp_i > 0:
-            self.code = [f"double {self.get_used_temps()};\n\n",
-                         f"{self.get_code()}\n"]
+        # if global_config.tmp_i > 0:
+        #     self.code = [f"double {self.get_used_temps()};\n\n",
+        #                  f"{self.get_code()}\n"]
+
+        self.code = [f"double t0,t1,t2;\n\n{self.get_code()}\n"]
 
     # should be called after add_tmps_on_top
     def add_headers_on_top(self):
+        a = self.code[::]
         self.code = [f'#include <stdio.h>\n'
                      f'#include <math.h>\n'
                      f'double HEAP[{HEAP_SIZE}];\n'
                      f'double STACK[{STACK_SIZE}];\n'
                      f'double P;\n'
-                     f'double H;\n\n'
-                     f'{self.get_code()}']
+                     f'double H;\n\n']
+
+        for func in global_config.function_list.keys():
+            self.code.append(f"void fn_{func}();")
+
+        self.code += a
 
     ##############################################################
 
@@ -190,8 +203,28 @@ class Generator:
     # 1: Division by 0
     # 2: Index out of bounds
     def add_error_return(self, return_code: str):
-        self.code.append(f"return {return_code};")
+        # self.code.append(f"return {return_code};")
+        if return_code != "":
+            self.code.append(f"t1={return_code};")
+        self.code.append(f"return;")
+
 
     def add_comment(self, msg):
         if add_comments:
             self.code.append(f"//{msg}")
+
+    def add_set_as_function(self, name):
+        a = self.code[::]
+        self.code = []
+        self.code.append(f"void fn_{name} (){{")
+
+        tmp_str = ""
+        for tmp in self.tempList:
+            tmp_str += f",t{tmp}"
+        self.code.append(f"double {tmp_str[1:]};")
+        self.code += a
+        self.code.append("P=P; // exit label can't be empty lmao")
+        self.code.append("}")
+
+    def add_func_call(self, func_id):
+        self.code.append(f"fn_{func_id}();")

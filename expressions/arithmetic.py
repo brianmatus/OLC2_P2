@@ -42,16 +42,17 @@ class Arithmetic(Expression):
                     global_config.log_semantic_error(error_msg, self.line, self.column)
                     raise errors.semantic_error.SemanticError(error_msg, self.line, self.column)
 
+                # <a code>
+                # <b code>
+                # generator.code = left.generator.code + right.generator.code
+                generator = left.generator.combine_with(right.generator)
+
                 tf = generator.new_temp()
                 t1 = generator.new_temp()
 
                 label_loop = generator.new_label()
                 label_end = generator.new_label()
                 label_exit = generator.new_label()
-
-                # <a code>
-                # <b code>
-                generator.code = left.generator.code + right.generator.code
 
                 # tf = 1
                 generator.add_expression(tf, "1", "", "")
@@ -102,8 +103,9 @@ class Arithmetic(Expression):
 
                 # INT
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.INT:
+                    # generator.code = left.generator.code + right.generator.code
+                    generator = left.generator.combine_with(right.generator)
                     new_tmp = generator.new_temp()
-                    generator.code = left.generator.code + right.generator.code
                     generator.add_expression(new_tmp, left.value, right.value, "+")
                     return ValueTuple(new_tmp, ExpressionType.INT, False,
                                       generator, ExpressionType.INT, None, True, [], [])
@@ -111,8 +113,9 @@ class Arithmetic(Expression):
                 # USIZE INT(literals)
                 if left.expression_type == ExpressionType.USIZE and right.expression_type == ExpressionType.INT:
                     if global_config.is_arithmetic_pure_literals(self.right):
+                        # generator.code = left.generator.code + right.generator.code
+                        generator = left.generator.combine_with(right.generator)
                         new_tmp = generator.new_temp()
-                        generator.code = left.generator.code + right.generator.code
                         generator.add_expression(new_tmp, left.value, right.value, "+")
                         return ValueTuple(new_tmp, ExpressionType.USIZE, False,
                                           generator, ExpressionType.USIZE, None, True, [], [])
@@ -120,16 +123,18 @@ class Arithmetic(Expression):
                 # INT(literals) USIZE
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.USIZE:
                     if global_config.is_arithmetic_pure_literals(self.left):
+                        # generator.code = left.generator.code + right.generator.code
+                        generator = left.generator.combine_with(right.generator)
                         new_tmp = generator.new_temp()
-                        generator.code = left.generator.code + right.generator.code
                         generator.add_expression(new_tmp, left.value, right.value, "+")
                         return ValueTuple(new_tmp, ExpressionType.USIZE, False,
                                           generator, ExpressionType.USIZE, None, True, [], [])
 
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
+                    # generator.code = left.generator.code + right.generator.code
+                    generator = left.generator.combine_with(right.generator)
                     new_tmp = generator.new_temp()
-                    generator.code = left.generator.code + right.generator.code
                     generator.add_expression(new_tmp, left.value, right.value, "+")
                     return ValueTuple(new_tmp, ExpressionType.FLOAT, False,
                                       generator, ExpressionType.FLOAT, None, True, [], [])
@@ -142,7 +147,8 @@ class Arithmetic(Expression):
                     and right.expression_type == ExpressionType.STRING_PRIMITIVE
 
                 if a or b:
-                    generator.code = left.generator.code + right.generator.code
+                    # generator.code = left.generator.code + right.generator.code
+                    generator = left.generator.combine_with(right.generator)
 
                     # if string, need to buffer al heap to other location
                     exit_label = generator.new_label()
@@ -194,17 +200,25 @@ class Arithmetic(Expression):
             case ArithmeticType.SUB:
                 # INT
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.INT:
+                    # generator.code = left.generator.code + right.generator.code
+                    generator = left.generator.combine_with(right.generator)
                     new_tmp = generator.new_temp()
-                    generator.code = left.generator.code
-                    generator.code = generator.code + right.generator.code
                     generator.add_expression(new_tmp, left.value, right.value, "-")
                     return ValueTuple(new_tmp, ExpressionType.INT, False,
                                       generator, ExpressionType.INT, None, True, [], [])
+
+                # USIZE
+                if left.expression_type == ExpressionType.USIZE and right.expression_type == ExpressionType.USIZE:
+                    generator = left.generator.combine_with(right.generator)
+                    new_tmp = generator.new_temp()
+                    generator.add_expression(new_tmp, left.value, right.value, "-")
+                    return ValueTuple(new_tmp, ExpressionType.INT, False,
+                                      generator, ExpressionType.INT, None, True, [], [])
+
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
+                    generator = left.generator.combine_with(right.generator)
                     new_tmp = generator.new_temp()
-                    generator.code = left.generator.code
-                    generator.code = generator.code + right.generator.code
                     generator.add_expression(new_tmp, left.value, right.value, "+")
                     return ValueTuple(new_tmp, ExpressionType.FLOAT, False,
                                       generator, ExpressionType.FLOAT, None, True, [], [])
@@ -212,8 +226,9 @@ class Arithmetic(Expression):
                 # USIZE INT(literals)
                 if left.expression_type == ExpressionType.USIZE and right.expression_type == ExpressionType.INT:
                     if global_config.is_arithmetic_pure_literals(self.right):
+                        generator = left.generator.combine_with(right.generator)
+
                         new_tmp = generator.new_temp()
-                        generator.code = left.generator.code + right.generator.code
                         generator.add_expression(new_tmp, left.value, right.value, "-")
                         return ValueTuple(new_tmp, ExpressionType.USIZE, False,
                                           generator, ExpressionType.USIZE, None, True, [], [])
@@ -221,8 +236,8 @@ class Arithmetic(Expression):
                 # INT(literals) USIZE
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.USIZE:
                     if global_config.is_arithmetic_pure_literals(self.left):
+                        generator = left.generator.combine_with(right.generator)
                         new_tmp = generator.new_temp()
-                        generator.code = left.generator.code + right.generator.code
                         generator.add_expression(new_tmp, left.value, right.value, "-")
                         return ValueTuple(new_tmp, ExpressionType.USIZE, False,
                                           generator, ExpressionType.USIZE, None, True, [], [])
@@ -235,17 +250,15 @@ class Arithmetic(Expression):
             case ArithmeticType.MULT:
                 # INT
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.INT:
+                    generator = left.generator.combine_with(right.generator)
                     new_tmp = generator.new_temp()
-                    generator.code = left.generator.code
-                    generator.code = generator.code + right.generator.code
                     generator.add_expression(new_tmp, left.value, right.value, "*")
                     return ValueTuple(new_tmp, ExpressionType.INT, False,
                                       generator, ExpressionType.INT, None, True, [], [])
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
+                    generator = left.generator.combine_with(right.generator)
                     new_tmp = generator.new_temp()
-                    generator.code = left.generator.code
-                    generator.code = generator.code + right.generator.code
                     generator.add_expression(new_tmp, left.value, right.value, "*")
                     return ValueTuple(new_tmp, ExpressionType.FLOAT, False,
                                       generator, ExpressionType.FLOAT, None, True, [], [])
@@ -253,8 +266,8 @@ class Arithmetic(Expression):
                 # USIZE INT(literals)
                 if left.expression_type == ExpressionType.USIZE and right.expression_type == ExpressionType.INT:
                     if global_config.is_arithmetic_pure_literals(self.right):
+                        generator = left.generator.combine_with(right.generator)
                         new_tmp = generator.new_temp()
-                        generator.code = left.generator.code + right.generator.code
                         generator.add_expression(new_tmp, left.value, right.value, "*")
                         return ValueTuple(new_tmp, ExpressionType.USIZE, False,
                                           generator, ExpressionType.USIZE, None, True, [], [])
@@ -262,8 +275,8 @@ class Arithmetic(Expression):
                 # INT(literals) USIZE
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.USIZE:
                     if global_config.is_arithmetic_pure_literals(self.left):
+                        generator = left.generator.combine_with(right.generator)
                         new_tmp = generator.new_temp()
-                        generator.code = left.generator.code + right.generator.code
                         generator.add_expression(new_tmp, left.value, right.value, "*")
                         return ValueTuple(new_tmp, ExpressionType.USIZE, False,
                                           generator, ExpressionType.USIZE, None, True, [], [])
@@ -277,8 +290,8 @@ class Arithmetic(Expression):
 
                 # INT
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.INT:
+                    generator = left.generator.combine_with(right.generator)
                     new_tmp = generator.new_temp()
-                    generator.code = left.generator.code + right.generator.code
 
                     not_div_by_zero_label = generator.new_label()
                     generator.add_if(right.value, "0", "!=", not_div_by_zero_label)
@@ -292,8 +305,8 @@ class Arithmetic(Expression):
                                       generator, ExpressionType.FLOAT, None, True, [], [])
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
+                    generator = left.generator.combine_with(right.generator)
                     new_tmp = generator.new_temp()
-                    generator.code = left.generator.code + right.generator.code
 
                     not_div_by_zero_label = generator.new_label()
                     generator.add_if(right.value, "0", "!=", not_div_by_zero_label)
@@ -314,15 +327,15 @@ class Arithmetic(Expression):
             case ArithmeticType.MOD:
                 # INT
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.INT:
+                    generator = left.generator.combine_with(right.generator)
                     new_tmp = generator.new_temp()
-                    generator.code = left.generator.code + right.generator.code
                     generator.add_expression(new_tmp, f'(int){left.value}', f'(int){right.value}', "%")
                     return ValueTuple(new_tmp, ExpressionType.INT, False,
                                       generator, ExpressionType.INT, None, True, [], [])
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT and right.expression_type == ExpressionType.FLOAT:
+                    generator = left.generator.combine_with(right.generator)
                     new_tmp = generator.new_temp()
-                    generator.code = left.generator.code + right.generator.code
                     generator.add_expression(new_tmp, f'(int){left.value}', f'(int){right.value}', "%")
                     return ValueTuple(new_tmp, ExpressionType.INT, False,
                                       generator, ExpressionType.INT, None, True, [], [])
@@ -330,8 +343,8 @@ class Arithmetic(Expression):
                 # USIZE INT(literals)
                 if left.expression_type == ExpressionType.USIZE and right.expression_type == ExpressionType.INT:
                     if global_config.is_arithmetic_pure_literals(self.right):
+                        generator = left.generator.combine_with(right.generator)
                         new_tmp = generator.new_temp()
-                        generator.code = left.generator.code + right.generator.code
                         generator.add_expression(new_tmp, f'(int){left.value}', f'(int){right.value}', "%")
                         return ValueTuple(new_tmp, ExpressionType.USIZE, False,
                                           generator, ExpressionType.USIZE, None, True, [], [])
@@ -339,8 +352,8 @@ class Arithmetic(Expression):
                 # INT(literals) USIZE
                 if left.expression_type == ExpressionType.INT and right.expression_type == ExpressionType.USIZE:
                     if global_config.is_arithmetic_pure_literals(self.left):
+                        generator = left.generator.combine_with(right.generator)
                         new_tmp = generator.new_temp()
-                        generator.code = left.generator.code + right.generator.code
                         generator.add_expression(new_tmp, f'(int){left.value}', f'(int){right.value}', "%")
                         return ValueTuple(new_tmp, ExpressionType.USIZE, False,
                                           generator, ExpressionType.USIZE, None, True, [], [])
@@ -354,15 +367,15 @@ class Arithmetic(Expression):
 
                 # INT
                 if left.expression_type == ExpressionType.INT:
+                    generator = left.generator.combine_with(right.generator)
                     new_tmp = generator.new_temp()
-                    generator.code = left.generator.code + right.generator.code
                     generator.add_expression(new_tmp, "", left.value, "-")
                     return ValueTuple(new_tmp, ExpressionType.INT, False,
                                       generator, ExpressionType.INT, None, True, [], [])
                 # FLOAT
                 if left.expression_type == ExpressionType.FLOAT:
+                    generator = left.generator.combine_with(right.generator)
                     new_tmp = generator.new_temp()
-                    generator.code = left.generator.code + right.generator.code
                     generator.add_expression(new_tmp, "", left.value, "-")
                     return ValueTuple(new_tmp, ExpressionType.FLOAT, False,
                                       generator, ExpressionType.FLOAT, None, True, [], [])

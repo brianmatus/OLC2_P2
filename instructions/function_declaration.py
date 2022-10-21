@@ -28,8 +28,8 @@ class FunctionDeclaration(Instruction):
         self.return_capacity = None
         self.return_true_label = []
         self.return_false_label = []
-        if isinstance(return_type, ArrayDefType):
 
+        if isinstance(return_type, ArrayDefType):
             dims, t = global_config.array_type_to_dimension_dict_and_type(return_type)
             self.return_type = ExpressionType.ARRAY
             self.return_content_type = t
@@ -37,8 +37,6 @@ class FunctionDeclaration(Instruction):
 
         self.instructions: List[Instruction] = instructions
         self.environment: Union[Environment, None] = None
-
-        self.start_label = "func_declaration_start_label_not_set"
 
         if function_list.get(self.function_id) is not None:
             error_msg = f"La función {self.function_id} ya esta definida. " \
@@ -93,21 +91,6 @@ class FunctionDeclaration(Instruction):
         final_generator.add_comment(f"<<<-------------------------------Function Declaration of {self.function_id}"
                                     f"------------------------------->>>")
 
-        # dont_execute_me = final_generator.new_label()
-        # final_generator.add_goto(dont_execute_me)
-
-        self.start_label = final_generator.new_label()
-
-        final_generator.add_label([self.start_label])
-
-        return_position = final_generator.new_temp()
-        final_generator.add_expression(return_position, "t1", "", "")
-
-        # TODO update should be called from func call
-        # final_generator.add_comment("-----Update P for a new environment-----")
-        #
-        # final_generator.add_expression("P", "P", env.size, "+")
-
         exit_label = final_generator.new_label()
         if self.return_type == ExpressionType.VOID:
             self.environment.transfer_control.append(TransferInstruction(TransferType.RETURN, exit_label, False))
@@ -136,21 +119,23 @@ class FunctionDeclaration(Instruction):
 
         final_generator.add_comment("Return label of func:")
         final_generator.add_label([exit_label])
-        # final_generator.add_comment("-----Revert P back-----")
-        # final_generator.add_expression("P", "P", env.size, "-")
 
-        final_generator.add_comment("-----Where was i called from? return there-----")
-        final_generator.add_comment("   -----return value will be set to t0 by return_inst-----")
-        final_generator.add_comment(f"-----where to return will be set to t1-----")
-        final_generator.add_comment(f"-----t1 is then catch by {return_position}-----")
+        final_generator.add_set_as_function(self.function_id)
 
-        if self.function_id in global_config.function_call_list.keys():
-            for i in range(len(global_config.function_call_list[self.function_id])):
-                final_generator.add_if(return_position, str(i),
-                                       "==", global_config.function_call_list[self.function_id][i])
-        else:
-            print(f"Function {self.function_id} was never called")
-            final_generator.add_comment(f"Function {self.function_id} was never called")
+        global_config.function_3ac_code.append(final_generator.get_code())
 
-        return ExecReturn(generator=final_generator,
+        # final_generator.add_comment("-----Where was i called from? return there-----")
+        # final_generator.add_comment("   -----return value will be set to t0 by return_inst-----")
+        # final_generator.add_comment(f"-----where to return will be set to t1-----")
+        # final_generator.add_comment(f"-----t1 is then catch by {return_position}-----")
+        #
+        # if self.function_id in global_config.function_call_list.keys():
+        #     for i in range(len(global_config.function_call_list[self.function_id])):
+        #         final_generator.add_if(return_position, str(i),
+        #                                "==", global_config.function_call_list[self.function_id][i])
+        # else:
+        #     print(f"Function {self.function_id} was never called")
+        #     final_generator.add_comment(f"Function {self.function_id} was never called")
+
+        return ExecReturn(generator=Generator(),
                           propagate_method_return=False, propagate_continue=False, propagate_break=False)

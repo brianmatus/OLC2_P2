@@ -20,8 +20,9 @@ class ReturnI(Instruction):
         generator = Generator()
         generator.add_comment(f"-------------------------------Return Instruction-------------------------------")
 
-        where_to_jump, the_type = env.get_transfer_control_label(TransferType.RETURN, self.expr is not None,
+        where_to_jump, the_type, p_revert = env.get_transfer_control_label(TransferType.RETURN, self.expr is not None,
                                                                  self.line, self.column)
+
 
         if self.expr is None:
             generator.add_comment("No value returned, this only to avoid past value being referenced")
@@ -59,6 +60,10 @@ class ReturnI(Instruction):
         else:
             generator.add_expression("t0", result.value, "", "")
         generator.add_expression("t2", "1", "", "")
+
+        generator.add_comment("########## Custom P revert ##########")
+        generator.add_expression("P", "P", str(p_revert), "-")
+
         generator.add_goto(where_to_jump)
 
         return ExecReturn(generator=generator,

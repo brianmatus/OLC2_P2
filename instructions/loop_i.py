@@ -39,6 +39,9 @@ class LoopI(Instruction):
 
         final_generator.add_label([l_exit])
 
+        final_generator.add_comment("-----Revert P for a previous environment-----")
+        final_generator.add_expression("P", "P", env.size, "-")
+
         return ExecReturn(final_generator, False, False, False)
 
 
