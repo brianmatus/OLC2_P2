@@ -140,7 +140,7 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
         instruction: Instruction
         final_generator: Generator = Generator()
         main_start = final_generator.new_label()
-        final_generator.add_goto(main_start)
+        # final_generator.add_goto(main_start)
 
         for instruction in instruction_set:
             if not isinstance(instruction, FunctionDeclaration):  # Or Module declaration

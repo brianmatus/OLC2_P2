@@ -94,6 +94,7 @@ class ArrayAssignment(Instruction):
 
         # Index out of bounds check
         # resulting = the_symbol
+        # TODO check for sliced array dims
         error_label = generator.new_label()
         exit_label = generator.new_label()
         for i in range(len(dimensions)):
@@ -113,7 +114,7 @@ class ArrayAssignment(Instruction):
 
         generator.add_goto(exit_label)
         generator.add_label([error_label])
-        generator.add_print_message(f"ERROR SEMANTIC: Size incorrecto de array "
+        generator.add_print_message(f"arr_assign::ERROR SEMANTIC: Size incorrecto de array "
                                     f"en linea:{self.line} columna:{self.column}")
         generator.add_error_return("2")
 

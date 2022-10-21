@@ -40,10 +40,6 @@ class Generator:
         tmp = "t" + str(global_config.tmp_i)
         self.tempList.append(global_config.tmp_i)
         global_config.tmp_i += 1
-
-        if tmp == "t18":
-            pass
-
         return tmp
 
     # Label
@@ -97,11 +93,11 @@ class Generator:
 
     # should be called after add_main_enclosure
     def add_tmps_on_top(self):
-        # if global_config.tmp_i > 0:
-        #     self.code = [f"double {self.get_used_temps()};\n\n",
-        #                  f"{self.get_code()}\n"]
+        if global_config.tmp_i > 0:
+            self.code = [f"double {self.get_used_temps()};\n\n",
+                         f"{self.get_code()}\n"]
 
-        self.code = [f"double t0,t1,t2;\n\n{self.get_code()}\n"]
+        # self.code = [f"double t0,t1,t2;\n\n{self.get_code()}\n"]
 
     # should be called after add_tmps_on_top
     def add_headers_on_top(self):
@@ -113,8 +109,8 @@ class Generator:
                      f'double P;\n'
                      f'double H;\n\n']
 
-        for func in global_config.function_list.keys():
-            self.code.append(f"void fn_{func}();")
+        # for func in global_config.function_list.keys():
+        #     self.code.append(f"void fn_{func}();")
 
         self.code += a
 
@@ -218,10 +214,10 @@ class Generator:
         self.code = []
         self.code.append(f"void fn_{name} (){{")
 
-        tmp_str = ""
-        for tmp in self.tempList:
-            tmp_str += f",t{tmp}"
-        self.code.append(f"double {tmp_str[1:]};")
+        # tmp_str = ""
+        # for tmp in self.tempList:
+        #     tmp_str += f",t{tmp}"
+        # self.code.append(f"double {tmp_str[1:]};")
         self.code += a
         self.code.append("P=P; // exit label can't be empty lmao")
         self.code.append("}")
