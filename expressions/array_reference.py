@@ -81,6 +81,8 @@ class ArrayReference(Expression):
             generator.add_label([error_label])
             generator.add_print_message(f"arr_ref::ERROR SEMANTIC: Size incorrecto de array "
                                         f"en linea:{self.line} columna:{self.column}")
+            generator.add_error_return("2")
+            generator.add_goto(exit_label)
 
             generator.add_label([error_label2])
             generator.add_print_message(f"arr_ref::ERROR SEMANTIC: Acceso negativo a array "

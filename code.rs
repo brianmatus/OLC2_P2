@@ -52,7 +52,7 @@ fn main() {
     for dato in datos {
         apilar(capacidad, &mut pila, dato);
     }
-
+    
     println!("{:?}", pila);
     println!("{}", desapilar(&mut pila));
     apilar(capacidad, &mut pila, 1250);

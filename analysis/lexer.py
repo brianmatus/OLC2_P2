@@ -147,6 +147,9 @@ def t_CHAR(t):
     # TODO check only one char appearing (special chars?)
     r"""'[^']*'"""
     t.value = t.value[1:-1]
+    t.value = t.value.replace("\\n", "\n")
+    if len(t.value) > 1:
+        t.type = 'STRING_TEXT'
     return t
 
 
