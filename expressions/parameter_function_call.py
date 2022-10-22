@@ -50,7 +50,7 @@ class ParameterFunctionCallE(Expression):
             result = self.variable_id.execute(environment)
             if result.expression_type == ExpressionType.ARRAY:
                 if self.function_id == "to_string":
-                    gen = Generator()
+                    gen = Generator(environment)
                     gen.add_comment(
                         f"-------------------------------Parameter Func Call::to_string for array"
                         f"-------------------------------")
@@ -64,7 +64,7 @@ class ParameterFunctionCallE(Expression):
                     string_result = gen.new_temp()
                     gen.add_expression(string_result, "H", "", "")
 
-                    body_generator: Generator = Generator()
+                    body_generator: Generator = Generator(environment)
 
                     first = True
 
@@ -86,10 +86,10 @@ class ParameterFunctionCallE(Expression):
 
                         gen.add_expression(t_max, dim, "", "")
                         if first:
-                            body_generator = traverse_loop_for_stringify(body_generator, result, ptr, t_max, True)
+                            body_generator = traverse_loop_for_stringify(body_generator, result, ptr, t_max, True, environment)
                             first = False
                             continue
-                        body_generator = traverse_loop_for_stringify(body_generator, result, ptr, t_max, False)
+                        body_generator = traverse_loop_for_stringify(body_generator, result, ptr, t_max, False, environment)
 
                     gen.add_comment("---Print:Array traverse")
                     gen.combine_with(body_generator)
@@ -116,7 +116,7 @@ class ParameterFunctionCallE(Expression):
             if result.expression_type == ExpressionType.VECTOR:
                 if self.function_id == "len":
 
-                    gen = Generator()
+                    gen = Generator(environment)
                     gen.add_comment("-------------------param func call::var_ref::vector len-------------------")
                     gen.combine_with(result.generator)
                     gen.add_comment("---Pointer for value")
@@ -130,7 +130,7 @@ class ParameterFunctionCallE(Expression):
 
                 if self.function_id == "capacity":
 
-                    gen = Generator()
+                    gen = Generator(environment)
                     gen.add_comment("-------------------param func call::var_ref::vector capacity-------------------")
                     gen.combine_with(result.generator)
                     gen.add_comment("---Pointer for value")
@@ -149,7 +149,7 @@ class ParameterFunctionCallE(Expression):
                         log_semantic_error(error_msg, self.line, self.column)
                         raise SemanticError(error_msg, self.line, self.column)
 
-                    gen = Generator()
+                    gen = Generator(environment)
                     gen.add_comment("-------------------param func call::var_ref::vector contains-------------------")
 
                     if len(self.params) != 1:
@@ -221,7 +221,7 @@ class ParameterFunctionCallE(Expression):
 
                 if self.function_id == "push":
 
-                    gen = Generator()
+                    gen = Generator(environment)
                     gen.add_comment("-------------------param func call::var_ref::vector push-------------------")
 
                     if len(self.params) != 1:
@@ -321,7 +321,7 @@ class ParameterFunctionCallE(Expression):
 
                 if self.function_id == "insert":
 
-                    gen = Generator()
+                    gen = Generator(environment)
                     gen.add_comment("-------------------param func call::var_ref::vector insert-------------------")
                     gen.combine_with(result.generator)
 
@@ -578,7 +578,7 @@ class ParameterFunctionCallE(Expression):
 
                 if self.function_id == "remove":
 
-                    gen = Generator()
+                    gen = Generator(environment)
                     gen.add_comment("-------------------param func call::var_ref::vector remove-------------------")
                     gen.combine_with(result.generator)
 
@@ -856,7 +856,7 @@ class ParameterFunctionCallE(Expression):
             if result.expression_type == ExpressionType.VECTOR:
                 if self.function_id == "len":
 
-                    gen = Generator()
+                    gen = Generator(environment)
                     gen.add_comment("-------------------param func call::var_ref::vector len-------------------")
                     gen.combine_with(result.generator)
                     gen.add_comment("---Pointer for value")
@@ -870,7 +870,7 @@ class ParameterFunctionCallE(Expression):
 
                 if self.function_id == "capacity":
 
-                    gen = Generator()
+                    gen = Generator(environment)
                     gen.add_comment("-------------------param func call::var_ref::vector capacity-------------------")
                     gen.combine_with(result.generator)
                     gen.add_comment("---Pointer for value")
@@ -889,7 +889,7 @@ class ParameterFunctionCallE(Expression):
                         log_semantic_error(error_msg, self.line, self.column)
                         raise SemanticError(error_msg, self.line, self.column)
 
-                    gen = Generator()
+                    gen = Generator(environment)
                     gen.add_comment("-------------------param func call::var_ref::vector contains-------------------")
 
                     if len(self.params) != 1:
@@ -961,7 +961,7 @@ class ParameterFunctionCallE(Expression):
 
                 if self.function_id == "push":
 
-                    gen = Generator()
+                    gen = Generator(environment)
                     gen.add_comment("-------------------param func call::var_ref::vector push-------------------")
 
                     if len(self.params) != 1:
@@ -1061,7 +1061,7 @@ class ParameterFunctionCallE(Expression):
 
                 if self.function_id == "insert":
 
-                    gen = Generator()
+                    gen = Generator(environment)
                     gen.add_comment("-------------------param func call::var_ref::vector insert-------------------")
                     gen.combine_with(result.generator)
 
@@ -1318,7 +1318,7 @@ class ParameterFunctionCallE(Expression):
 
                 if self.function_id == "remove":
 
-                    gen = Generator()
+                    gen = Generator(environment)
                     gen.add_comment("-------------------param func call::var_ref::vector remove-------------------")
                     gen.combine_with(result.generator)
 
@@ -1517,7 +1517,7 @@ class ParameterFunctionCallE(Expression):
 
             if result.expression_type == ExpressionType.ARRAY:
                 if self.function_id == "to_string":
-                    gen = Generator()
+                    gen = Generator(environment)
                     gen.combine_with(result.generator)
                     gen.add_comment("---Pointer for value")
                     ptr = gen.new_temp()
@@ -1528,7 +1528,7 @@ class ParameterFunctionCallE(Expression):
                     string_result = gen.new_temp()
                     gen.add_expression(string_result, "H", "", "")
 
-                    body_generator: Generator = Generator()
+                    body_generator: Generator = Generator(environment)
 
                     first = True
 
@@ -1550,10 +1550,10 @@ class ParameterFunctionCallE(Expression):
 
                         gen.add_expression(t_max, dim, "", "")
                         if first:
-                            body_generator = traverse_loop_for_stringify(body_generator, result, ptr, t_max, True)
+                            body_generator = traverse_loop_for_stringify(body_generator, result, ptr, t_max, True, environment)
                             first = False
                             continue
-                        body_generator = traverse_loop_for_stringify(body_generator, result, ptr, t_max, False)
+                        body_generator = traverse_loop_for_stringify(body_generator, result, ptr, t_max, False, environment)
 
                     gen.add_comment("---Print:Array traverse")
                     gen.combine_with(body_generator)
@@ -1758,7 +1758,7 @@ class ParameterFunctionCallE(Expression):
             #                   the_symbol.capacity)
             pass
 
-        generator = Generator()
+        generator = Generator(env)
         if isinstance(the_symbol, ArraySymbol):
             return ValueTuple(the_symbol.dimensions[1], ExpressionType.INT, is_mutable=True, generator=generator,
                               content_type=ExpressionType.INT, capacity=None, is_tmp=True,
@@ -1798,7 +1798,7 @@ class ParameterFunctionCallE(Expression):
                           true_label=[], false_label=[])
 
     def value_len(self, literal_expr, env: Environment) -> ValueTuple:
-        generator = Generator()
+        generator = Generator(env)
         ref = literal_expr.execute(env)
         generator.combine_with(ref.generator)
 
@@ -1857,7 +1857,7 @@ def get_dimensions_for_passed_non_fixed_array(generator: Generator,
 
 
 def traverse_loop_for_stringify(generator: Generator, the_arg: ValueTuple, ptr: str, t_max: str,
-                            is_first: bool) -> Generator:
+                            is_first: bool, envvv) -> Generator:
 
     if is_first:
         generator.add_comment(
@@ -1921,9 +1921,9 @@ def traverse_loop_for_stringify(generator: Generator, the_arg: ValueTuple, ptr: 
 
     # ##################################################################################################################
     # Not first? wrap
-    to_wrap = Generator()
+    to_wrap = Generator(envvv)
     to_wrap.combine_with(generator)
-    generator = Generator()
+    generator = Generator(envvv)
     generator.add_comment(
         "----------------------------------------STRINGIFY WRAP TRAVERSE OF ARRAY-----------------------------")
 

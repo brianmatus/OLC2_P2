@@ -19,7 +19,7 @@ class ConditionalExpression(Expression):
 
     def execute(self, environment: Environment) -> ValueTuple:
 
-        final_generator: Generator = Generator()
+        final_generator: Generator = Generator(environment)
         final_generator.add_comment(f"<<<-------------------------------If/Elseif/Else"
                                     f"------------------------------->>>")
 

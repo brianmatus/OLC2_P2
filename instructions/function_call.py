@@ -26,10 +26,10 @@ class FunctionCallI(Instruction):
         if function_id not in global_config.function_call_list.keys():
             global_config.function_call_list[function_id] = []
 
-        self.turn = len(global_config.function_call_list[function_id])
+        # self.turn = len(global_config.function_call_list[function_id])
 
-        self.comeback_label = Generator().new_label()
-        global_config.function_call_list[function_id].append(self.comeback_label)
+        # self.comeback_label = Generator().new_label()
+        # global_config.function_call_list[function_id].append(self.comeback_label)
         pass
 
     def execute(self, env: Environment) -> ExecReturn:
@@ -54,11 +54,13 @@ class FunctionCallI(Instruction):
         # intermediate_env = Environment(main_environment)
         # intermediate_env.parent_environment = main_environment
 
-        final_generator = Generator()
+        final_generator = Generator(env)
         final_generator.add_comment(f"-------------------------------Function Call of {self.function_id}"
                                     f"-------------------------------")
 
         arg_position = ""
+
+
 
         if len(self.params) != 0:
             final_generator.add_comment("-----f_call:Temporal new P for setting up func args in new env-----")
@@ -68,14 +70,20 @@ class FunctionCallI(Instruction):
         else:
             final_generator.add_comment("Function has no args, no temporal new P needed")
 
-        offset = 0  # For arrays with no size set
+        given_params = []
+        for i in range(len(self.params)):
+            given_params.append(self.params[i].expr.execute(env))
 
-
+        # Get them, but not add them yet!
+        # Only necessary for args future positions
+        # But given params are still found in current P
+        # So add them after all args are passed
+        fn_used_tmps = env.get_tmps_from_function()
+        offset = len(fn_used_tmps)  # For arrays with no size set
 
         for i in range(len(self.params)):
-
             param = func.params[i]
-            given = self.params[i].expr.execute(env)
+            given = given_params[i]
 
             final_generator.combine_with(given.generator)
 
@@ -156,6 +164,11 @@ class FunctionCallI(Instruction):
         final_generator.add_comment("-----f_call:Update P for a new environment-----")
         final_generator.add_expression("P", "P", env.size, "+")
 
+        final_generator.add_comment("-----f_call:P offset of tmps used in this function-----")
+        for tmp in fn_used_tmps:
+            final_generator.add_set_stack("P", tmp)
+            final_generator.add_expression("P", "P", "1", "+")
+
         # final_generator.add_comment(f"-----f_call:Where should the func return once completed? To {self.comeback_label}-----")
         # final_generator.add_expression("t1", str(self.turn), "", "")
 
@@ -172,6 +185,7 @@ class FunctionCallI(Instruction):
 
         final_generator.add_comment("-----f_call:Revert P for a previous environment-----")
         final_generator.add_expression("P", "P", env.size, "-")
+        # final_generator.add_expression("P", "P", str(len(fn_used_tmps)), "-")  # TODO fixme
         final_generator.add_comment("-----f_call:Revert func_has_returned-----")
         final_generator.add_expression("t2", "0", "", "")
         return ExecReturn(final_generator, False, False, False)
@@ -179,7 +193,7 @@ class FunctionCallI(Instruction):
 
 def func_call_custom_array_expr(the_array_expr, env: Environment) -> Tuple[Generator, str]:
     flat_array = global_config.flatten_array(the_array_expr)
-    generator = Generator()
+    generator = Generator(env)
     generator.add_comment(f"-------------------------------Array Expr passed as arg-------------------------------")
 
     values = []

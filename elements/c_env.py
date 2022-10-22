@@ -34,7 +34,10 @@ class ArraySymbol:
         self.symbol_type = symbol_type
         self.is_init = is_init
         self.is_mutable = is_mutable
+        if "embedded_type" in dimensions.keys():
+            dimensions.pop("embedded_type")
         self.dimensions: {} = dimensions
+
 
 
 class VectorSymbol:
@@ -72,6 +75,9 @@ class Environment:
 
         self.transfer_control: List[TransferInstruction] = []
         self.return_type: ExpressionType = return_type
+
+        self.associated_tmps = []
+        self.is_function_env = False
 
         if self.parent_environment is not None:
             pass
@@ -199,20 +205,22 @@ class Environment:
         return the_symbol
 
     def get_transfer_control_label(self, transfer_type: TransferType, with_value: bool, line: int, column: int,
-                                   p_revert=0, first=True)\
-            -> Tuple[str, ExpressionType, int]:
+                                   p_revert=0, first=True, a=None)\
+            -> Tuple[str, ExpressionType, int, List[str]]:
+        a = []
 
         for trans in self.transfer_control:
             if trans.transfer_type == transfer_type:
                 if trans.with_value == with_value:
                     if transfer_type == TransferType.RETURN:
                         if first:
-                            return trans.label_to_jump, self.return_type, p_revert
-                        return trans.label_to_jump, self.return_type, p_revert+self.size
+                            a = self.get_tmps_from_function()
+                            return trans.label_to_jump, self.return_type, p_revert, a
+                        return trans.label_to_jump, self.return_type, p_revert+self.size, a
 
                     if first:
-                        return trans.label_to_jump, self.return_type, p_revert
-                    return trans.label_to_jump, self.return_type, p_revert+self.size
+                        return trans.label_to_jump, self.return_type, p_revert, a
+                    return trans.label_to_jump, self.return_type, p_revert+self.size, a
                 error_msg = f'Instrucción {transfer_type.name} con retorno de valor no valido'
                 global_config.log_semantic_error(error_msg, line, column)
                 raise SemanticError(error_msg, line, column)
@@ -225,10 +233,33 @@ class Environment:
 
         if first:
             return self.parent_environment.get_transfer_control_label(transfer_type, with_value, line, column,
-                                                                      p_revert, first=False)
+                                                                      p_revert, first=False, a=a)
 
         return self.parent_environment.get_transfer_control_label(transfer_type, with_value,
-                                                                  line, column, p_revert + self.size, first=False)
+                                                                  line, column, p_revert + self.size, first=False, a=a)
+
+    def add_tmp_to_function(self, tmp):
+        if self.is_function_env:
+            self.associated_tmps.append(tmp)
+            return
+        # hit top
+        if self.parent_environment is None:
+            print("NO FUNCTION ENV FOUND, CHECK")
+            input()
+            return []
+        self.parent_environment.add_tmp_to_function(tmp)
+
+    def get_tmps_from_function(self) -> List[str]:
+        return []  # TODO fixme
+        if self.is_function_env:
+            return self.associated_tmps
+        # hit top
+        if self.parent_environment is None:
+            print("NO FUNCTION ENV FOUND, CHECK")
+            input()
+            return []
+        return self.parent_environment.get_tmps_from_function()
+
 
     def remove_child(self, child):  # child: Environment
         self.children_environment = list(filter(lambda p: p is not child, self.children_environment))

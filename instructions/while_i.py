@@ -24,7 +24,7 @@ class WhileI(Instruction):
 
     def execute(self, env: Environment) -> ExecReturn:
 
-        final_generator: Generator = Generator()
+        final_generator: Generator = Generator(env)
         final_generator.add_comment(f"<<<-------------------------------WHILE------------------------------->>>")
 
         final_generator.add_comment("-----Update P for a new environment-----")

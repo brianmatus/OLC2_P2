@@ -133,7 +133,7 @@ class Declaration(Instruction):
         # bool is a special type
         if result.expression_type == ExpressionType.BOOL:
 
-            generator = Generator()
+            generator = Generator(env)
             generator.add_comment(f"-------------------------------Declaration of {self.variable_id}"
                                   f"-------------------------------")
 
@@ -163,7 +163,7 @@ class Declaration(Instruction):
             the_symbol: Symbol = env.save_variable(self.variable_id, self.expression_type,
                                                    self.is_mutable, True, self.line, self.column)
 
-            generator = Generator()
+            generator = Generator(env)
             generator.add_comment(f"-------------------------------Declaration of {self.variable_id}"
                                   f"-------------------------------")
 
@@ -188,7 +188,7 @@ class Declaration(Instruction):
             the_symbol: Symbol = env.save_variable(self.variable_id, self.expression_type,
                                                    self.is_mutable, True, self.line, self.column)
 
-            generator = Generator()
+            generator = Generator(env)
             generator.add_comment(f"-------------------------------Declaration of {self.variable_id}"
                                   f"-------------------------------")
 
@@ -202,20 +202,22 @@ class Declaration(Instruction):
                               propagate_method_return=False, propagate_continue=False, propagate_break=False)
 
         # usize var_type with int expr_type
-        if result.expression_type == ExpressionType.USIZE and expr.expression_type == ExpressionType.INT:
+        m = result.expression_type == ExpressionType.USIZE and self.expression_type == ExpressionType.INT
+        n = result.expression_type == ExpressionType.INT and self.expression_type == ExpressionType.USIZE
+        if m or n:
 
-            if global_config.is_arithmetic_pure_literals(self.expression):
-                the_symbol: Symbol = env.save_variable(self.variable_id, self.expression_type,
-                                                       self.is_mutable, True, self.line, self.column)
+            # if global_config.is_arithmetic_pure_literals(self.expression):
+            the_symbol: Symbol = env.save_variable(self.variable_id, self.expression_type,
+                                                   self.is_mutable, True, self.line, self.column)
 
-                t = result.generator.new_temp()
-                result.generator.add_expression(t, "P", the_symbol.heap_position, "+")
-                result.generator.add_set_stack(t, str(result.value))
-                return ExecReturn(generator=result.generator,
-                                  propagate_method_return=False, propagate_continue=False, propagate_break=False)
+            t = result.generator.new_temp()
+            result.generator.add_expression(t, "P", the_symbol.heap_position, "+")
+            result.generator.add_set_stack(t, str(result.value))
+            return ExecReturn(generator=result.generator,
+                              propagate_method_return=False, propagate_continue=False, propagate_break=False)
 
         # Error:
         error_msg = f'Asignación de tipo {result.expression_type.name} a variable <{self.variable_id}> ' \
-                    f'de tipo {self.expression_type.name}'
+                    f'de tipo {expr.expression_type.name}'
         global_config.log_semantic_error(error_msg, self.line, self.column)
         raise SemanticError(error_msg, self.line, self.column)

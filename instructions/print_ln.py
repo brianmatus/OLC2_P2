@@ -45,7 +45,7 @@ class PrintLN(Instruction):
 
         # r = the_str.find("\\n")
         # the_str.replace("\\n", "\n")
-        generator = Generator()
+        generator = Generator(env)
         generator.add_comment(f"<<<-------------------------------PRINTLN------------------------------->>>")
 
         if len(self.expr_list[1:]) == 0:
@@ -110,15 +110,15 @@ class PrintLN(Instruction):
                     #
                     #
                     #
-                    body_generator = Generator()
+                    body_generator = Generator(env)
                     is_first = True
                     the_ptr = generator.new_temp()
                     for i in range(the_arg.capacity[0]):
                         if is_first:
-                            traverse_vector_for_print(body_generator, the_arg, the_ptr, True)
+                            traverse_vector_for_print(body_generator, the_arg, the_ptr, True, env)
                             is_first = False
                         else:
-                            the_ptr = traverse_vector_for_print(body_generator, the_arg, the_ptr, False)
+                            the_ptr = traverse_vector_for_print(body_generator, the_arg, the_ptr, False, env)
 
                     generator.add_comment("outer assignment of pointer")
                     generator.add_expression(the_ptr, ptr, "", "")
@@ -142,7 +142,7 @@ class PrintLN(Instruction):
 
                 backwards_dimensions = the_arg.capacity[::-1]
 
-                body_generator: Generator = Generator()
+                body_generator: Generator = Generator(env)
                 first = True
 
                 offset_for_none = 0  # for arrays without size, need to get it from array_stack_pos + n for n->n-dim
@@ -165,10 +165,10 @@ class PrintLN(Instruction):
 
                     generator.add_expression(t_max, dim, "", "")
                     if first:
-                        body_generator = traverse_loop_for_print(body_generator, the_arg, ptr, t_max, True)
+                        body_generator = traverse_loop_for_print(body_generator, the_arg, ptr, t_max, True, env)
                         first = False
                         continue
-                    body_generator = traverse_loop_for_print(body_generator, the_arg, ptr, t_max, False)
+                    body_generator = traverse_loop_for_print(body_generator, the_arg, ptr, t_max, False, env)
 
                 generator.add_comment("---Print:Array traverse")
                 generator.combine_with(body_generator)
@@ -213,7 +213,7 @@ class PrintLN(Instruction):
 
 
 def traverse_vector_for_print(generator: Generator, the_arg: ValueTuple, ptr: str,
-                            is_first: bool) -> str:
+                            is_first: bool, envvv) -> str:
 
     if is_first:
         generator.add_comment(
@@ -263,7 +263,7 @@ def traverse_vector_for_print(generator: Generator, the_arg: ValueTuple, ptr: st
 
 
     gen = generator
-    generator = Generator()
+    generator = Generator(envvv)
 
     the_new_ptr = generator.new_temp()
     generator.add_comment(
@@ -345,7 +345,7 @@ def get_dimensions_for_passed_non_fixed_array(generator: Generator,
 
 
 def traverse_loop_for_print(generator: Generator, the_arg: ValueTuple, ptr: str, t_max: str,
-                            is_first: bool) -> Generator:
+                            is_first: bool, envvv) -> Generator:
 
     if is_first:
         generator.add_comment(
@@ -403,9 +403,9 @@ def traverse_loop_for_print(generator: Generator, the_arg: ValueTuple, ptr: str,
 
     # ##################################################################################################################
     # Not first? wrap
-    to_wrap = Generator()
+    to_wrap = Generator(envvv)
     to_wrap.combine_with(generator)
-    generator = Generator()
+    generator = Generator(envvv)
     generator.add_comment("----------------------------------------WRAP TRAVERSE OF ARRAY-----------------------------")
 
     t_counter = generator.new_temp()

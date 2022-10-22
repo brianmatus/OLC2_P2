@@ -30,7 +30,7 @@ class VariableReference(Expression):
         if isinstance(the_symbol, VectorSymbol):
             array_symbol: VectorSymbol = the_symbol
 
-            generator = Generator()
+            generator = Generator(environment)
             generator.add_comment(f"-------------------------------Variable Reference of {self.variable_id} as vector"
                                   f"-------------------------------")
             generator.add_comment("var_ref::Calculated offset internally")
@@ -50,7 +50,7 @@ class VariableReference(Expression):
         if isinstance(the_symbol, ArraySymbol):
             array_symbol: ArraySymbol = the_symbol
 
-            generator = Generator()
+            generator = Generator(environment)
             generator.add_comment(f"-------------------------------Variable Reference of {self.variable_id} as array"
                                   f"-------------------------------")
             generator.add_comment("var_ref::Calculated offset internally")
@@ -83,7 +83,7 @@ class VariableReference(Expression):
                               content_type=array_symbol.symbol_type, capacity=list(array_symbol.dimensions.values()),
                               is_tmp=True, true_label=[], false_label=[])
 
-        generator = Generator()
+        generator = Generator(environment)
         generator.add_comment(f"-------------------------------Variable Reference of {self.variable_id}"
                               f"-------------------------------")
 

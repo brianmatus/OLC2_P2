@@ -138,7 +138,7 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
     # Register all functions and modules
     try:
         instruction: Instruction
-        final_generator: Generator = Generator()
+        final_generator: Generator = Generator(global_config.main_environment)
         main_start = final_generator.new_label()
         # final_generator.add_goto(main_start)
 
@@ -173,6 +173,7 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
 
         # TODO "Apartir de aqui todo vale madre"
         final_generator.add_label([main_start])
+        global_config.main_environment.is_function_env = True
         final_generator.combine_with(synthetic_call.execute(global_config.main_environment).generator)
         final_generator.add_comment("<<<<<<<<<<<<<<<<<<<<End of program>>>>>>>>>>>>>>>>>>")
 

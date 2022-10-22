@@ -17,7 +17,7 @@ class ContinueI(Instruction):
         self.expr = expr
 
     def execute(self, env: Environment) -> ExecReturn:
-        generator = Generator()
+        generator = Generator(env)
         generator.add_comment(f"-------------------------------BREAK Instruction-------------------------------")
 
         where_to_jump, the_type = env.get_transfer_control_label(TransferType.CONTINUE, self.expr is not None,
@@ -66,7 +66,7 @@ class ContinueI(Instruction):
 
 def return_custom_array_expr(the_array_expr, env: Environment) -> Tuple[Generator, str]:
     flat_array = global_config.flatten_array(the_array_expr)
-    generator = Generator()
+    generator = Generator(env)
     generator.add_comment(f"-------------------------------Array Expr passed as arg-------------------------------")
 
     values = []

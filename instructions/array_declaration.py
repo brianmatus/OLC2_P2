@@ -74,7 +74,7 @@ class ArrayDeclaration(Instruction):
                     global_config.log_semantic_error(error_msg, self.line, self.column)
                     raise SemanticError(error_msg, self.line, self.column)
 
-            generator = Generator()
+            generator = Generator(env)
             generator.add_comment(f"-------------------------------Array Declaration of {self.variable_id} as reference"
                                   f"-------------------------------")
 
@@ -184,7 +184,7 @@ class ArrayDeclaration(Instruction):
         # ###################################################Accepted###################################################
         flat_array = global_config.flatten_array(the_array_expr)
 
-        generator = Generator()
+        generator = Generator(env)
         generator.add_comment(f"-------------------------------Array Declaration of {self.variable_id}"
                               f"-------------------------------")
 

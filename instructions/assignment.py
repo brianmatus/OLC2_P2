@@ -16,7 +16,7 @@ class Assigment(Instruction):
 
     def execute(self, env: Environment) -> ExecReturn:
 
-        generator = Generator()
+        generator = Generator(env)
         generator.add_comment(f"-------------------------------Assignment of {self.variable_id}"
                               f"-------------------------------")
         result = self.expression.execute(env)

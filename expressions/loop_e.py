@@ -19,7 +19,7 @@ class LoopE(Expression):
 
     def execute(self, environment: Environment) -> ValueTuple:
 
-        final_generator: Generator = Generator()
+        final_generator: Generator = Generator(environment)
         final_generator.add_comment(f"<<<---------------------------LOOP AS EXPR------------------------------->>>")
 
         final_generator.add_comment("-----Update P for a new environment-----")

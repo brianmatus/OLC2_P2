@@ -17,12 +17,13 @@ class ReturnI(Instruction):
         self.expr = expr
 
     def execute(self, env: Environment) -> ExecReturn:
-        generator = Generator()
+        generator = Generator(env)
         generator.add_comment(f"-------------------------------Return Instruction-------------------------------")
 
-        where_to_jump, the_type, p_revert = env.get_transfer_control_label(TransferType.RETURN, self.expr is not None,
+        where_to_jump, the_type, p_revert, a = env.get_transfer_control_label(TransferType.RETURN, self.expr is not None,
                                                                  self.line, self.column)
 
+        pass
 
         if self.expr is None:
             generator.add_comment("No value returned, this only to avoid past value being referenced")
@@ -62,7 +63,7 @@ class ReturnI(Instruction):
         generator.add_expression("t2", "1", "", "")
 
         generator.add_comment("########## Custom P revert ##########")
-        generator.add_expression("P", "P", str(p_revert), "-")
+        generator.add_expression("P", "P", f"{p_revert}", "-")
 
         generator.add_goto(where_to_jump)
 
@@ -72,7 +73,7 @@ class ReturnI(Instruction):
 
 def return_custom_array_expr(the_array_expr, env: Environment) -> Tuple[Generator, str]:
     flat_array = global_config.flatten_array(the_array_expr)
-    generator = Generator()
+    generator = Generator(env)
     generator.add_comment(f"-------------------------------Array Expr passed as arg-------------------------------")
 
     values = []

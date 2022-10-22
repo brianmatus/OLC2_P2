@@ -30,7 +30,7 @@ class Arithmetic(Expression):
 
         self.expression_type = left.content_type
 
-        generator = Generator()
+        generator = Generator(environment)
         match self.arithmetic_type:
 
             case ArithmeticType.POW_INT:

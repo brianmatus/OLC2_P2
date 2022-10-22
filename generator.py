@@ -12,10 +12,11 @@ STACK_COUNTER = 0
 class Generator:
     heap = 5
 
-    def __init__(self) -> None:
+    def __init__(self, env) -> None:
         # self.generator = None
         self.code: list = []
         self.tempList: list = []
+        self.env = env
 
     def get_used_temps(self) -> str:
         return ",".join([f"t{i}" for i in range(global_config.tmp_i)])
@@ -35,11 +36,14 @@ class Generator:
         self.code = self.code + gen.code[:]  # slice is ok? idk
         self.tempList = self.tempList + gen.tempList[:]
         return self
+
     # tmp
-    def new_temp(self) -> str:
+    def new_temp(self, persist=False) -> str:
         tmp = "t" + str(global_config.tmp_i)
         self.tempList.append(global_config.tmp_i)
         global_config.tmp_i += 1
+        if persist:
+            self.env.add_tmp_to_function(tmp)
         return tmp
 
     # Label

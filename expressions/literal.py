@@ -17,16 +17,16 @@ class Literal(Expression):
         if self.expression_type in [ExpressionType.INT, ExpressionType.FLOAT]:
 
             return ValueTuple(value=self.value, expression_type=self.expression_type, is_mutable=False,
-                              content_type=self.expression_type, capacity=None, is_tmp=False, generator=Generator(),
+                              content_type=self.expression_type, capacity=None, is_tmp=False, generator=Generator(environment),
                               true_label=[], false_label=[])
 
         if self.expression_type == ExpressionType.CHAR:
             return ValueTuple(value=str(ord(self.value)), expression_type=self.expression_type, is_mutable=False,
-                              content_type=self.expression_type, capacity=None, is_tmp=False, generator=Generator(),
+                              content_type=self.expression_type, capacity=None, is_tmp=False, generator=Generator(environment),
                               true_label=[], false_label=[])
 
         if self.expression_type in [ExpressionType.STRING_PRIMITIVE, ExpressionType.STRING_CLASS]:
-            generator = Generator()
+            generator = Generator(environment)
 
             if forced_string:
                 return ValueTuple(value=None, expression_type=self.expression_type, is_mutable=False,
@@ -48,7 +48,7 @@ class Literal(Expression):
                               true_label=[self.value], false_label=[])
 
         if self.expression_type == ExpressionType.BOOL:
-            generator = Generator()
+            generator = Generator(environment)
             the_label = generator.new_label()
             generator.add_goto(the_label)
             if self.value == 0:

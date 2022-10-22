@@ -57,6 +57,7 @@ class FunctionDeclaration(Instruction):
 
     def execute(self, env: Environment) -> ExecReturn:
         self.environment = Environment(env)
+        self.environment.is_function_env = True
 
         for param in self.params:
             if param.expression_type == ExpressionType.ARRAY:
@@ -87,7 +88,7 @@ class FunctionDeclaration(Instruction):
                 self.environment.save_variable(param.variable_id, param.expression_type, param.is_mutable,
                                                True, self.line, self.column)
 
-        final_generator: Generator = Generator()
+        final_generator: Generator = Generator(self.environment)
         final_generator.add_comment(f"<<<-------------------------------Function Declaration of {self.function_id}"
                                     f"------------------------------->>>")
 
@@ -137,5 +138,5 @@ class FunctionDeclaration(Instruction):
         #     print(f"Function {self.function_id} was never called")
         #     final_generator.add_comment(f"Function {self.function_id} was never called")
 
-        return ExecReturn(generator=Generator(),
+        return ExecReturn(generator=Generator(self.environment),
                           propagate_method_return=False, propagate_continue=False, propagate_break=False)

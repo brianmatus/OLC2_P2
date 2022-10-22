@@ -33,7 +33,7 @@ class VectorDeclaration(Instruction):
 
     def execute(self, env: Environment) -> ExecReturn:
 
-        gen = Generator()
+        gen = Generator(env)
         gen.add_comment(f"-------------------------------Vector Declaration of {self.variable_id}"
                         f"-------------------------------")
 

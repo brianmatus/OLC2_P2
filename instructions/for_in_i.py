@@ -32,7 +32,7 @@ class ForInI(Instruction):
         self.intermediate_env = Environment(None)
 
     def execute(self, env: Environment) -> ExecReturn:
-        gen = Generator()
+        gen = Generator(env)
         gen.add_comment(f"<<<-------------------------------FOR IN------------------------------->>>")
 
         for_in_env = Environment(env)

@@ -33,4 +33,4 @@ class ArrayExpression(Expression):
         # Definition by list
         return ValueTuple(value=self.value, expression_type=ExpressionType.ARRAY, is_mutable=True,
                           content_type=ExpressionType.VOID, capacity=None, false_label=[], true_label=[], is_tmp=False,
-                          generator=Generator())
+                          generator=Generator(environment))

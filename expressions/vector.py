@@ -33,7 +33,7 @@ class VectorExpression(Expression):
         # 1: element
         # 2: pointer no next, -1 if non
 
-        gen = Generator()
+        gen = Generator(environment)
         gen.add_comment("----------------------------------------"
                         "Vector Expression----------------------------------------")
 

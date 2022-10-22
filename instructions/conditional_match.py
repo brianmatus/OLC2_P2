@@ -25,7 +25,7 @@ class MatchI(Instruction):
 
     def execute(self, env: Environment) -> ExecReturn:
 
-        final_generator: Generator = Generator()
+        final_generator: Generator = Generator(env)
         final_generator.add_comment(f"<<<-------------------------------Match------------------------------->>>")
 
         compare_to_result = self.compare_to.execute(env)

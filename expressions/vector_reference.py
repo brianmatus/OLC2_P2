@@ -36,7 +36,7 @@ class VectorReference(Expression):
             log_semantic_error(error_msg, self.line, self.column)
             raise SemanticError(error_msg, self.line, self.column)
 
-        generator = Generator()
+        generator = Generator(environment)
         generator.add_comment(f"-------------------------------Vector Reference of {self.variable_id} as vector"
                               f"-------------------------------")
 

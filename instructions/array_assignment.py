@@ -46,7 +46,7 @@ class ArrayAssignment(Instruction):
             raise SemanticError(error_msg, self.line, self.column)
 
         from generator import Generator
-        generator = Generator()
+        generator = Generator(env)
         generator.add_comment("---------------ARRAY ASSIGNMENT---------------")
         generator.combine_with(expr.generator)
 
@@ -147,7 +147,7 @@ class ArrayAssignment(Instruction):
 
             flat_array = global_config.flatten_array(expr.value)
             from generator import Generator
-            generator = Generator()
+            generator = Generator(env)
             generator.add_comment(f"-------------------------------Array Assignment of {self.variable_id}"
                                   f"-------------------------------")
             t = generator.new_temp()

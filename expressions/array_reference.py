@@ -42,7 +42,7 @@ class ArrayReference(Expression):
             log_semantic_error(error_msg, self.line, self.column)
             raise SemanticError(error_msg, self.line, self.column)
 
-        generator = Generator()
+        generator = Generator(environment)
         generator.add_comment(f"-------------------------------Array Reference of {self.variable_id} as array"
                               f"-------------------------------")
 
@@ -69,12 +69,10 @@ class ArrayReference(Expression):
             if the_symbol.dimensions[1] is not None:
                 for i in range(len(dimensions)):
                     generator.add_if(dimensions[i], the_symbol.dimensions[i + 1], ">=", error_label)
-
-
-                    if dimensions[i] > the_symbol.dimensions[i + 1]:
-                        error_msg = f'Las dimensiones del array son menores a las ingresadas'
-                        log_semantic_error(error_msg, self.line, self.column)
-                        raise SemanticError(error_msg, self.line, self.column)
+                    # if dimensions[i] > the_symbol.dimensions[i + 1]:
+                    #     error_msg = f'Las dimensiones del array son menores a las ingresadas'
+                    #     log_semantic_error(error_msg, self.line, self.column)
+                    #     raise SemanticError(error_msg, self.line, self.column)
 
             generator.add_goto(exit_label)
             generator.add_label([error_label])
