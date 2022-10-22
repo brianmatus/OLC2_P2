@@ -47,6 +47,8 @@ class ParameterFunctionCallE(Expression):
 
         if isinstance(self.variable_id, ArrayReference):
 
+            if self.function_id == "clone":
+                pass
             result = self.variable_id.execute(environment)
             if result.expression_type == ExpressionType.ARRAY:
                 if self.function_id == "to_string":
@@ -581,6 +583,7 @@ class ParameterFunctionCallE(Expression):
                     gen = Generator(environment)
                     gen.add_comment("-------------------param func call::var_ref::vector remove-------------------")
                     gen.combine_with(result.generator)
+                    t_removed_element_value = gen.new_temp()
 
                     if len(self.params) != 1:
                         error_msg = f".remove() solo toma 1 argumento, {len(self.params)} fueron dados"
@@ -633,13 +636,20 @@ class ParameterFunctionCallE(Expression):
                     gen.add_if(t_old_length, "1", "!=", l_length_not_one)
 
                     gen.add_expression(t_pointer, t_pointer, "2", "+")  # offsets to element
+
+                    gen.add_comment("aqui la wea2")
+                    gen.add_get_heap(t_removed_element_value, t_pointer)
+
                     gen.add_set_heap(t_pointer, "-6969")
 
                     gen.add_goto(l_finished)
 
                     gen.add_label([l_length_not_one])
 
-                    gen.add_expression(t_pointer, t_pointer, "3", "+")  # offsets to next
+                    gen.add_expression(t_pointer, t_pointer, "2", "+")  # offsets to element
+                    gen.add_get_heap(t_removed_element_value, t_pointer)
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to next
+
                     t_next_element_ptr = gen.new_temp()
                     gen.add_get_heap(t_next_element_ptr, t_pointer)
 
@@ -683,6 +693,10 @@ class ParameterFunctionCallE(Expression):
 
                     gen.add_label([l_arrived])
                     gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
+
+                    t_element_ptr = gen.new_temp()
+                    gen.add_get_heap(t_element_ptr, t_pointer)
+                    gen.add_get_heap(t_removed_element_value, t_element_ptr)
                     gen.add_set_heap(t_pointer, "-1")
 
                     # gen.add_set_heap("H", element_to_push.value)
@@ -705,25 +719,7 @@ class ParameterFunctionCallE(Expression):
                     gen.add_expression(t_new_length, t_old_length, "1", "-")
                     gen.add_set_heap(t_pointer, t_new_length)
 
-                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to capacity
-                    t_capacity = gen.new_temp()
-                    gen.add_get_heap(t_capacity, t_pointer)
-
-                    l_no_update = gen.new_label()
-                    l_not_zero = gen.new_label()
-                    gen.add_if(t_capacity, t_new_length, ">=", l_no_update)
-                    gen.add_if(t_capacity, "0", "!=", l_not_zero)
-                    gen.add_expression(t_capacity, "1", "", "")
-                    gen.add_set_heap(t_pointer, t_capacity)
-                    gen.add_goto(l_no_update)
-
-                    gen.add_label([l_not_zero])
-                    gen.add_expression(t_capacity, "2", t_capacity, "*")
-                    gen.add_set_heap(t_pointer, t_capacity)
-
-                    gen.add_label([l_no_update])
-
-                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to element
+                    gen.add_expression(t_pointer, t_pointer, "2", "+")  # offsets to element
 
                     l_index_not_out_of_bounds = gen.new_label()
                     gen.add_if(counter, t_old_length, "<", l_index_not_out_of_bounds)
@@ -741,7 +737,6 @@ class ParameterFunctionCallE(Expression):
 
                     gen.add_label([l_loop])
                     gen.add_if(counter, "0", "==", l_arrived)
-
                     gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
                     gen.add_expression(t_before_next_ptr, t_pointer, "", "")
                     gen.add_get_heap(t_pointer, t_pointer)  # goto element of next
@@ -750,7 +745,6 @@ class ParameterFunctionCallE(Expression):
 
                     gen.add_label([l_arrived])
 
-                    t_removed_element_value = gen.new_temp()
                     gen.add_get_heap(t_removed_element_value, t_pointer)
 
                     t_next_ptr_value = gen.new_temp()
@@ -763,11 +757,21 @@ class ParameterFunctionCallE(Expression):
                     # .remove returns the removed element
 
                     # TODO check for booleans
+                    if result.capacity[0] == 1:
+                        return ValueTuple(value=t_removed_element_value, expression_type=result.content_type,
+                                          is_mutable=result.is_mutable, generator=gen, content_type=result.content_type,
+                                          capacity=[result.capacity[0] - 1], is_tmp=True, true_label=[], false_label=[])
                     return ValueTuple(value=t_removed_element_value, expression_type=result.expression_type,
                                       is_mutable=result.is_mutable, generator=gen, content_type=result.content_type,
                                       capacity=[result.capacity[0] - 1], is_tmp=True, true_label=[], false_label=[])
 
+                pass
             # Result is primitive
+
+            if self.function_id == "clone":
+                # TODO this works? lmao
+                return result
+
             if self.function_id == "to_string":
                 if result.expression_type in [ExpressionType.STRING_PRIMITIVE,  ExpressionType.STRING_CLASS,
                                               ExpressionType.CHAR]:
@@ -848,7 +852,7 @@ class ParameterFunctionCallE(Expression):
                     result.value = root_approx
                     return result
 
-        elif type(self.variable_id) in [VariableReference, TypeCasting]:
+        elif type(self.variable_id) in [VariableReference, TypeCasting, ParameterFunctionCallE]:
             result = self.variable_id.execute(environment)
             pass
 
@@ -1283,7 +1287,6 @@ class ParameterFunctionCallE(Expression):
                     gen.add_label([l_index_not_out_of_bounds])
 
 
-
                     l_loop = gen.new_label()
                     l_arrived = gen.new_label()
 
@@ -1321,6 +1324,7 @@ class ParameterFunctionCallE(Expression):
                     gen = Generator(environment)
                     gen.add_comment("-------------------param func call::var_ref::vector remove-------------------")
                     gen.combine_with(result.generator)
+                    t_removed_element_value = gen.new_temp()
 
                     if len(self.params) != 1:
                         error_msg = f".remove() solo toma 1 argumento, {len(self.params)} fueron dados"
@@ -1373,13 +1377,20 @@ class ParameterFunctionCallE(Expression):
                     gen.add_if(t_old_length, "1", "!=", l_length_not_one)
 
                     gen.add_expression(t_pointer, t_pointer, "2", "+")  # offsets to element
+
+                    gen.add_comment("aqui la wea2")
+                    gen.add_get_heap(t_removed_element_value, t_pointer)
+
                     gen.add_set_heap(t_pointer, "-6969")
 
                     gen.add_goto(l_finished)
 
                     gen.add_label([l_length_not_one])
 
-                    gen.add_expression(t_pointer, t_pointer, "3", "+")  # offsets to next
+                    gen.add_expression(t_pointer, t_pointer, "2", "+")  # offsets to element
+                    gen.add_get_heap(t_removed_element_value, t_pointer)
+                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to next
+
                     t_next_element_ptr = gen.new_temp()
                     gen.add_get_heap(t_next_element_ptr, t_pointer)
 
@@ -1423,6 +1434,10 @@ class ParameterFunctionCallE(Expression):
 
                     gen.add_label([l_arrived])
                     gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
+
+                    t_element_ptr = gen.new_temp()
+                    gen.add_get_heap(t_element_ptr, t_pointer)
+                    gen.add_get_heap(t_removed_element_value, t_element_ptr)
                     gen.add_set_heap(t_pointer, "-1")
 
                     # gen.add_set_heap("H", element_to_push.value)
@@ -1445,25 +1460,7 @@ class ParameterFunctionCallE(Expression):
                     gen.add_expression(t_new_length, t_old_length, "1", "-")
                     gen.add_set_heap(t_pointer, t_new_length)
 
-                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to capacity
-                    t_capacity = gen.new_temp()
-                    gen.add_get_heap(t_capacity, t_pointer)
-
-                    l_no_update = gen.new_label()
-                    l_not_zero = gen.new_label()
-                    gen.add_if(t_capacity, t_new_length, ">=", l_no_update)
-                    gen.add_if(t_capacity, "0", "!=", l_not_zero)
-                    gen.add_expression(t_capacity, "1", "", "")
-                    gen.add_set_heap(t_pointer, t_capacity)
-                    gen.add_goto(l_no_update)
-
-                    gen.add_label([l_not_zero])
-                    gen.add_expression(t_capacity, "2", t_capacity, "*")
-                    gen.add_set_heap(t_pointer, t_capacity)
-
-                    gen.add_label([l_no_update])
-
-                    gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to element
+                    gen.add_expression(t_pointer, t_pointer, "2", "+")  # offsets to element
 
                     l_index_not_out_of_bounds = gen.new_label()
                     gen.add_if(counter, t_old_length, "<", l_index_not_out_of_bounds)
@@ -1481,7 +1478,6 @@ class ParameterFunctionCallE(Expression):
 
                     gen.add_label([l_loop])
                     gen.add_if(counter, "0", "==", l_arrived)
-
                     gen.add_expression(t_pointer, t_pointer, "1", "+")  # offsets to ptr_next
                     gen.add_expression(t_before_next_ptr, t_pointer, "", "")
                     gen.add_get_heap(t_pointer, t_pointer)  # goto element of next
@@ -1490,7 +1486,6 @@ class ParameterFunctionCallE(Expression):
 
                     gen.add_label([l_arrived])
 
-                    t_removed_element_value = gen.new_temp()
                     gen.add_get_heap(t_removed_element_value, t_pointer)
 
                     t_next_ptr_value = gen.new_temp()
@@ -1502,18 +1497,14 @@ class ParameterFunctionCallE(Expression):
                     gen.add_label([l_finished])
                     # .remove returns the removed element
 
-                    if result.capacity[0] != 1:
-
                     # TODO check for booleans
-                        return ValueTuple(value=t_removed_element_value, expression_type=result.expression_type,
+                    if result.capacity[0] == 1:
+                        return ValueTuple(value=t_removed_element_value, expression_type=result.content_type,
                                           is_mutable=result.is_mutable, generator=gen, content_type=result.content_type,
                                           capacity=[result.capacity[0] - 1], is_tmp=True, true_label=[], false_label=[])
-
-                    a = ValueTuple(value=t_removed_element_value, expression_type=result.content_type,
+                    return ValueTuple(value=t_removed_element_value, expression_type=result.expression_type,
                                       is_mutable=result.is_mutable, generator=gen, content_type=result.content_type,
-                                      capacity=None, is_tmp=True, true_label=[], false_label=[])
-                    return a
-
+                                      capacity=[result.capacity[0] - 1], is_tmp=True, true_label=[], false_label=[])
 
             if result.expression_type == ExpressionType.ARRAY:
                 if self.function_id == "to_string":
@@ -1575,6 +1566,11 @@ class ParameterFunctionCallE(Expression):
                     return ValueTuple(value=result.capacity[0], expression_type=ExpressionType.INT, is_mutable=True,
                                       generator=result.generator, content_type=ExpressionType.INT, capacity=None,
                                       is_tmp=True, true_label=[], false_label=[])
+
+                if self.function_id == "clone":
+
+                    pass
+                    pass
 
             # Result is primivite
             if self.function_id == "to_string":
@@ -1734,10 +1730,13 @@ class ParameterFunctionCallE(Expression):
         #     r = self.variable_id.execute(environment)
         #     the_symbol = Symbol("type_casting_forced_symbol", r._type, r.value, True, False)
 
-        elif isinstance(self.variable_id, ParameterFunctionCallE):
-            # FIXME check resulting function type
-            pass
-            print("PARAMETER FUNC CALL::ParameterFunctionCallE INSTANCE NOT IMPLEMENTED YET")
+        # elif isinstance(self.variable_id, ParameterFunctionCallE):
+        #
+        #     result = self.variable_id.execute(environment)
+        #
+        #     # FIXME check resulting function type
+        #     pass
+        #     print("PARAMETER FUNC CALL::ParameterFunctionCallE INSTANCE NOT IMPLEMENTED YET")
 
 
         # TODO Check if is struct
@@ -1745,7 +1744,7 @@ class ParameterFunctionCallE(Expression):
 
         # TODO Check if present in struct
         print("missing stuff")
-        error_msg = f"Acceso a parametro de variable invalido.."
+        error_msg = f"Acceso a parametro de variable invalido..{self.function_id}"
         log_semantic_error(error_msg, self.line, self.column)
         raise SemanticError(error_msg, self.line, self.column)
 

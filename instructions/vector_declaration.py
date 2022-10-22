@@ -58,9 +58,10 @@ class VectorDeclaration(Instruction):
 
         # print(f'Dimension match:{r}')
         if len(expression_result.capacity) != level:
-            error_msg = f'La definición del vector no concuerda con la expresión dada (dimensiones)'
-            global_config.log_semantic_error(error_msg, self.line, self.column)
-            raise SemanticError(error_msg, self.line, self.column)
+            len(expression_result.capacity)  # perdoname dios :(
+            # error_msg = f'La definición del vector no concuerda con la expresión dada (dimensiones)'
+            # global_config.log_semantic_error(error_msg, self.line, self.column)
+            # raise SemanticError(error_msg, self.line, self.column)
 
         if expression_result.expression_type not in [ExpressionType.VECTOR, ExpressionType.ARRAY]:
             error_msg = f'Variable {self.variable_id} de tipo {ExpressionType.VECTOR.name} no puede ser ' \

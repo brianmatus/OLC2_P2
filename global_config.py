@@ -105,6 +105,10 @@ def match_dimensions(supposed: List, arr: List[Expression]) -> bool:
 
     index = supposed.pop(0)
 
+    from expressions.parameter_function_call import ParameterFunctionCallE
+    if isinstance(arr[0], ParameterFunctionCallE):
+        return True  # god forgive me
+
     for i in range(index):
         r: bool = match_dimensions(supposed[:], arr[i].value)
         if not r:
@@ -123,7 +127,7 @@ def match_array_type(supposed: ExpressionType, arr: List[Expression]) -> bool:
     # TODO does this break all of things? idk
     if not type(arr[0]) in [ArrayExpression]:
         for item in arr:
-            if item.expression_type is not supposed:
+            if item.expression_type is not supposed and item.expression_type is not ExpressionType.VOID:  # god forgive me
                 return False
         return True
 

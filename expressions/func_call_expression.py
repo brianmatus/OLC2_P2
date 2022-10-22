@@ -32,10 +32,10 @@ class FunctionCallE(Expression):
         gen.combine_with(result.generator)
 
         if fn.return_type == ExpressionType.BOOL:
-            l_true = result.generator.new_label()
-            l_false = result.generator.new_label()
-            result.generator.add_if("t0", "1", "==", l_true)
-            result.generator.add_goto(l_false)
+            l_true = gen.new_label()
+            l_false = gen.new_label()
+            gen.add_if("t0", "1", "==", l_true)
+            gen.add_goto(l_false)
             return ValueTuple("dont_use_me_bool", fn.return_type, True, gen, fn.return_content_type,
                               capacity=fn.return_capacity, is_tmp=True,
                               true_label=[l_true], false_label=[l_false])

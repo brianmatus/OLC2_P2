@@ -159,7 +159,9 @@ class ArrayDeclaration(Instruction):
 
             # Get my supposed values and match dimensions
             result: ValueTuple = self.expression.execute(env)
-            r = global_config.match_dimensions(list(sizes.values()), result.value)
+            a = list(sizes.values())
+            b = result.value
+            r = global_config.match_dimensions(a, b)
             # print(f'Dimension match:{r}')
             if not r:
                 error_msg = f'Uno o mas elementos del array no concuerdan en tamaño con su definición'

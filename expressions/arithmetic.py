@@ -150,6 +150,7 @@ class Arithmetic(Expression):
                     # generator.code = left.generator.code + right.generator.code
                     generator = left.generator.combine_with(right.generator)
 
+                    generator.add_comment("piti estuvo aqui")
                     # if string, need to buffer al heap to other location
                     exit_label = generator.new_label()
                     exit2_label = generator.new_label()

@@ -65,10 +65,13 @@ class ArrayReference(Expression):
 
             # Index out of bounds check
             error_label = generator.new_label()
+            error_label2 = generator.new_label()
             exit_label = generator.new_label()
             if the_symbol.dimensions[1] is not None:
                 for i in range(len(dimensions)):
                     generator.add_if(dimensions[i], the_symbol.dimensions[i + 1], ">=", error_label)
+                    generator.add_if(dimensions[i], "0", "<", error_label2)
+
                     # if dimensions[i] > the_symbol.dimensions[i + 1]:
                     #     error_msg = f'Las dimensiones del array son menores a las ingresadas'
                     #     log_semantic_error(error_msg, self.line, self.column)
@@ -77,6 +80,10 @@ class ArrayReference(Expression):
             generator.add_goto(exit_label)
             generator.add_label([error_label])
             generator.add_print_message(f"arr_ref::ERROR SEMANTIC: Size incorrecto de array "
+                                        f"en linea:{self.line} columna:{self.column}")
+
+            generator.add_label([error_label2])
+            generator.add_print_message(f"arr_ref::ERROR SEMANTIC: Acceso negativo a array "
                                         f"en linea:{self.line} columna:{self.column}")
             generator.add_error_return("2")
 

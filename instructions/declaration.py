@@ -31,6 +31,9 @@ class Declaration(Instruction):
 
     def execute(self, env: Environment) -> ExecReturn:
 
+        if self.variable_id == "cad":
+            pass
+
         from expressions.array_expression import ArrayExpression
         from instructions.array_declaration import ArrayDeclaration
 
@@ -218,6 +221,6 @@ class Declaration(Instruction):
 
         # Error:
         error_msg = f'Asignación de tipo {result.expression_type.name} a variable <{self.variable_id}> ' \
-                    f'de tipo {expr.expression_type.name}'
+                    f'de tipo {self.expression_type.name}'
         global_config.log_semantic_error(error_msg, self.line, self.column)
         raise SemanticError(error_msg, self.line, self.column)

@@ -3,7 +3,7 @@ from typing import List
 
 debug_prints = True
 add_comments = True
-HEAP_SIZE = 1500
+HEAP_SIZE = 2500
 HEAP_COUNTER = 0
 STACK_SIZE = 100
 STACK_COUNTER = 0
@@ -155,7 +155,9 @@ class Generator:
         self.code.append(f"printf(\"%{type_print}\",{value});")
 
     def add_print_message(self, msg: str):
-        self.code.append(f"// Printing:{msg}")
+        escaped = msg.translate(str.maketrans({"\n": r"\\n",
+                                                    }))
+        self.code.append(f"// Printing:{escaped}")
         for char in msg:
             self.code.append(f"printf(\"%c\",{str(ord(char))});")
 

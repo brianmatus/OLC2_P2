@@ -22,7 +22,7 @@ class BreakI(Instruction):
 
         t = self.expr is not None
 
-        where_to_jump, the_type, a = env.get_transfer_control_label(TransferType.BREAK, t,
+        where_to_jump, the_type, r, a = env.get_transfer_control_label(TransferType.BREAK, t,
                                                                  self.line, self.column)
 
         if self.expr is None:

@@ -93,7 +93,49 @@ class ForInI(Instruction):
             return ExecReturn(gen, False, False, False)
 
         result = self.range_expr.execute(env)
+        gen.combine_with(result.generator)
 
+        if result.expression_type == ExpressionType.ARRAY:
+            gen.add_comment("-----Update P for a new environment-----")
+            gen.add_expression("P", "P", env.size, "+")
 
+            t_ptr = gen.new_temp()
+            gen.add_expression(t_ptr, result.value, "", "")
+            t_a = gen.new_temp()
+            gen.add_expression(t_a, "0", "", "")
 
-        return ExecReturn(gen, False, False, False)
+            t_b = gen.new_temp()
+            gen.add_expression(t_b, str(result.capacity[0]), "", "")
+
+            # Looper is guaranteed to be first in env, so no need to get its deepness
+            t_element = gen.new_temp()
+            gen.add_get_heap(t_element, t_ptr)
+            gen.add_set_stack("P", t_element)
+
+            l_loop = gen.new_label()
+            l_finished = gen.new_label()
+
+            gen.add_label([l_loop])
+            gen.add_if(t_a, t_b, "==", l_finished)
+            if len(result.capacity) == 1:
+                for_in_env.save_variable(self.looper, result.content_type, True, True, self.line, self.column)
+            else:
+                for_in_env.save_variable_array(self.looper, result.content_type, result.capacity[1:], result.is_mutable,
+                                               True, self.line, self.column)
+
+            for instruction in self.instructions:
+                gen.combine_with(instruction.execute(for_in_env).generator)
+
+            gen.add_expression(t_a, t_a, "1", "+")
+            gen.add_expression(t_ptr, t_ptr, "1", "+")
+            gen.add_get_heap(t_element, t_ptr)
+            gen.add_set_stack("P", t_element)
+
+            gen.add_comment("--------------GO BACK TO LOOP--------------")
+            gen.add_goto(l_loop)
+
+            gen.add_label([l_finished])
+
+            gen.add_comment("-----Revert P for a previous environment-----")
+            gen.add_expression("P", "P", env.size, "-")
+            return ExecReturn(gen, False, False, False)

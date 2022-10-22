@@ -18,9 +18,9 @@ class ContinueI(Instruction):
 
     def execute(self, env: Environment) -> ExecReturn:
         generator = Generator(env)
-        generator.add_comment(f"-------------------------------BREAK Instruction-------------------------------")
+        generator.add_comment(f"-------------------------------CONTINUE Instruction-------------------------------")
 
-        where_to_jump, the_type = env.get_transfer_control_label(TransferType.CONTINUE, self.expr is not None,
+        where_to_jump, the_type, r, a = env.get_transfer_control_label(TransferType.CONTINUE, self.expr is not None,
                                                                  self.line, self.column)
 
         if self.expr is None:
