@@ -1,14 +1,10 @@
 import global_config
 import ply.yacc as yacc
-import analysis.lexer as lexer
+from optimization import o_lexer as lexer
 
 from errors.syntactic_error import SyntacticError
 
 from element_types.c_expression_type import ExpressionType
-from elements.condition_clause import ConditionClause
-from elements.condition_expression_clause import ConditionExpressionClause
-from elements.match_clause import MatchClause
-from elements.match_expression_clause import MatchExpressionClause
 from elements.c_env import Environment
 from elements.id_tuple import IDTuple
 from element_types.array_def_type import ArrayDefType
@@ -25,19 +21,9 @@ from instructions.array_assignment import ArrayAssignment
 from instructions.function_declaration import FunctionDeclaration
 from instructions.function_call import FunctionCallI
 from instructions.conditional import Conditional
-from instructions.conditional_match import MatchI
 from instructions.print_ln import PrintLN
 
-from instructions.loop_i import LoopI
-from instructions.while_i import WhileI
 from instructions.return_i import ReturnI
-from instructions.break_i import BreakI
-from instructions.continue_i import ContinueI
-from instructions.for_in_i import ForInI, ForInRanged
-
-from instructions.vector_declaration import VectorDeclaration
-
-from instructions.expression_as_instruction import ExpressionAsInstruction
 
 
 # ################################EXPRESSIONS#########################################
@@ -798,8 +784,9 @@ def p_elseif_expr_2(p):
     """else_if_expr : ELSE IF expression KEY_O instructions expression KEY_C"""
     p[0] = [ConditionExpressionClause(p[3], p[5], p[6], Environment(None))]
 
-    a = global_config.generate_symbol_table(p[5], "Expr:ELSE-IF" + global_config.random_hex_color_code())
-    global_config.tmp_symbol_table = global_config.tmp_symbol_table + a
+    # TODO uncomment
+    # a = global_config.generate_symbol_table(p[5], "Expr:ELSE-IF" + global_config.random_hex_color_code())
+    # global_config.tmp_symbol_table = global_config.tmp_symbol_table + a
 
 
 def p_else_expr_1(p):
@@ -811,8 +798,9 @@ def p_else_expr_2(p):
     """else_s_expr : ELSE KEY_O instructions expression KEY_C"""
     p[0] = [ConditionExpressionClause(None, p[3], p[4], Environment(None))]
 
-    a = global_config.generate_symbol_table(p[3], "Expr:ELSE" + global_config.random_hex_color_code())
-    global_config.tmp_symbol_table = global_config.tmp_symbol_table + a
+    # TODO uncomment
+    # a = global_config.generate_symbol_table(p[3], "Expr:ELSE" + global_config.random_hex_color_code())
+    # global_config.tmp_symbol_table = global_config.tmp_symbol_table + a
 
 
 

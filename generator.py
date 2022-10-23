@@ -1,7 +1,7 @@
 import global_config
 from typing import List
 
-debug_prints = True
+debug_prints = False
 add_comments = True
 HEAP_SIZE = 2500
 HEAP_COUNTER = 0
@@ -10,7 +10,6 @@ STACK_COUNTER = 0
 
 
 class Generator:
-    heap = 5
 
     def __init__(self, env) -> None:
         # self.generator = None
@@ -157,7 +156,7 @@ class Generator:
     def add_print_message(self, msg: str):
         escaped = msg.translate(str.maketrans({"\n": r"\\n",
                                                     }))
-        self.code.append(f"// Printing:{escaped}")
+        # self.code.append(f"// Printing:{escaped}")
         for char in msg:
             self.code.append(f"printf(\"%c\",{str(ord(char))});")
 
@@ -204,16 +203,17 @@ class Generator:
 
     # 1: Division by 0
     # 2: Index out of bounds
+    # ?? idk i forgot
     def add_error_return(self, return_code: str):
         # self.code.append(f"return {return_code};")
         if return_code != "":
             self.code.append(f"t1={return_code};")
         self.code.append(f"return;")
 
-
     def add_comment(self, msg):
         if add_comments:
-            self.code.append(f"//{msg}")
+            pass
+            # self.code.append(f"//{msg}")
 
     def add_set_as_function(self, name):
         a = self.code[::]

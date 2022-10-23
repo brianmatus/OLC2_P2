@@ -1,9 +1,5 @@
 import traceback
 
-import analysis.lexer as lexer  # TODO for debug only
-
-from typing import List, Union
-
 from generator import Generator
 
 import errors.custom_semantic
@@ -24,10 +20,20 @@ from errors.syntactic_error import SyntacticError
 import global_config
 import io
 
+from optimizer import Optimizer, OptimizationReport
+import re
 
+from typing import Tuple
 
 # TODO import: function decl, declaration, array declare, conditional, switch, while, for, logic
 
+
+def start_opt():
+
+    with io.open('opt_code.c', 'r', encoding='utf8', newline='\n') as fin:
+        input_code = fin.read()
+    f_opt, code = perform_optimization(input_code)
+    pass
 
 def start():  # FIXME this should be replaced with frontend sending the code
     # f = open("code.rs", "r", encoding='utf-8')
@@ -131,7 +137,7 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
     # print("#############################################################################")
     # print("#############################################################################")
 
-    print(instruction_set)
+    # print(instruction_set)
 
     synthetic_call = FunctionCallI("main", [], -1, -1)
 
@@ -191,29 +197,36 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
 
         print("-------------------------------------------------------------------------------------------------------")
 
-        # print("Resulting AST:")
-        # print(generate_ast_tree(instruction_set))
-        print("Resulting environment:")
-        _symbol_table = main_func.environment.symbol_table  # TODO delete me, debug only
-        _function_list = global_config.function_list  # TODO delete me, debug only
-        print(global_config.main_environment)
+        # _symbol_table = main_func.environment.symbol_table  # TODO delete me, debug only
+        # _function_list = global_config.function_list  # TODO delete me, debug only
         # print("Resulting function list:")
         # print(function_list)
-        # print("Resulting symbol table:")
-        # print(global_config.generate_symbol_table(instruction_set, "Main"))
+        print("Resulting symbol table:")
+        symbol_table = global_config.generate_symbol_table(instruction_set, "Main")
+
         print("-------------------------------------------------------------------------------------------------------")
         print("-------------------------------------------------------------------------------------------------------")
         print("--------------------------------------INITIAL COMPILING FINISHED---------------------------------------")
         print("-------------------------------------------------------------------------------------------------------")
         print("-------------------------------------------------------------------------------------------------------")
 
+        global_config.console_output += "\n"
+        global_config.console_output += "----------------------------------------------------------------------------\n"
+        global_config.console_output += "----------------------------------------------------------------------------\n"
+        global_config.console_output += "------------------INITIAL COMPILING FINISHED-------------------\n"
+        global_config.console_output += "----------------------------------------------------------------------------\n"
+        global_config.console_output += "----------------------------------------------------------------------------\n"
+
+        # f_opt, code = perform_optimization(final_generator.get_code())
+
         return {
             "console_output": global_config.console_output,
             "lexic_errors": global_config.lexic_error_list,
             "syntactic_errors": global_config.syntactic_error_list,
             "semantic_errors": global_config.semantic_error_list,
-            # "symbol_table":
-            # global_config.tmp_symbol_table + global_config.generate_symbol_table(instruction_set, "Main")
+            "symbol_table":
+            global_config.tmp_symbol_table + global_config.generate_symbol_table(instruction_set, "Main"),
+            # "optimization": f_opt
         }
 
         # return [global_config.lexic_error_list, global_config.syntactic_error_list,
@@ -275,8 +288,54 @@ def newtons_method_sqrt(x, x0):
     return root_approx
 
 
+def perform_optimization(code) -> Tuple[list, str]:
+
+    opt = Optimizer()
+
+    opt_code = code
+    func_names = re.findall(r'void fn_[^(]*(?=\(\))', opt_code)
+
+    for func in func_names:
+        mm = f'(?<={func}\(\){{)([^}}]*)(?=}})'
+        print(mm)
+        func_code = re.search(mm, opt_code).group(0)
+
+        blocks = []
+        while True:
+            label = re.search(r'L[0-9]*:', func_code)
+            jump = re.search(r'goto L[0-9]*;', func_code)
+            if label is None and jump is None:
+                blocks.append(func_code)
+                break
+
+            label_i, label_j = 0, 0
+            jump_i, jump_j = 0, 0
+            if label is not None:
+                label_i, label_j = label.span()
+            if jump is not None:
+                jump_i, jump_j = jump.span()
+
+            if label_i < jump_i and label is not None:
+                blocks.append(func_code[:label_j])
+                func_code = func_code[label_j:]
+                continue
+
+            blocks.append(func_code[:jump_j])
+            func_code = func_code[jump_j:]
+
+        optimized_blocks = []
+        for block in blocks:
+            block_result = opt.optimize_local_rule_1(block)
+
+
+
+    return opt.reports, opt_code
+
+
+
 if __name__ == '__main__':
     start()
+    # start_opt()
 
     # x = 38
     # print(newtons_method_sqrt(x, x / 2))

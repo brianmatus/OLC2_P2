@@ -13,12 +13,9 @@ cors = CORS(app, resources={r"/*": {"origins": "*"}})
 app.config['CORS_HEADERS'] = 'Content-Type, Access-Control-Allow-Origin'
 
 
-
 @app.route("/parse_code", methods=['POST'])
 @cross_origin(origin='*', headers=['Content-Type', 'Authorization', 'Access-Control-Allow-Origin'])
 def hello():
-
-
 
     if request.method != "POST":
         return jsonify({
@@ -31,10 +28,11 @@ def hello():
     a = request.values["code"]
     print(a)
 
-
-
-
     r = main.parse_code(a)
+    if "optimization" not in r.keys():
+        print("OPT TABLE NOT POPULATED")
+        r["optimization"] = [["a<->b<->c"]]
+
     return jsonify({"result": r})
     # return "a"
 

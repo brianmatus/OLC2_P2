@@ -178,7 +178,11 @@ class FunctionCallI(Instruction):
         l_not_error = final_generator.new_label()
         final_generator.add_if("t1", "0", "==", l_not_error)
         if self.function_id == "main":
-            final_generator.code.append("return t1;")
+            # final_generator.code.append("return t1;")
+            final_generator.add_print_message("Program finished with exit code:")
+            final_generator.add_printf("i", "t1")
+            final_generator.add_printf("c", str(ord("\n")))
+            final_generator.code.append("return 0;")
         else:
             final_generator.add_error_return("")
         final_generator.add_label([l_not_error])

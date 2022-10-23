@@ -251,14 +251,14 @@ class Environment:
 
     def get_tmps_from_function(self) -> List[str]:
         return []  # TODO fixme
-        if self.is_function_env:
-            return self.associated_tmps
-        # hit top
-        if self.parent_environment is None:
-            print("NO FUNCTION ENV FOUND, CHECK")
-            input()
-            return []
-        return self.parent_environment.get_tmps_from_function()
+        # if self.is_function_env:
+        #     return self.associated_tmps
+        # # hit top
+        # if self.parent_environment is None:
+        #     print("NO FUNCTION ENV FOUND, CHECK")
+        #     input()
+        #     return []
+        # return self.parent_environment.get_tmps_from_function()
 
 
     def remove_child(self, child):  # child: Environment
