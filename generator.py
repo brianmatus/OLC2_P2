@@ -90,7 +90,8 @@ class Generator:
 
         self.code = [f"int main(){{\n"
                      f"{self.get_code()}\n"
-                     f"//----------------------------CODE END------------------\n"
+                     # f"//----------------------------CODE END------------------\n"
+                     f"fn_main();\n"
                      f"return 0;\n"
                      f"}}"]
 
@@ -225,7 +226,7 @@ class Generator:
         #     tmp_str += f",t{tmp}"
         # self.code.append(f"double {tmp_str[1:]};")
         self.code += a
-        self.code.append("P=P; // exit label can't be empty lmao")
+        self.code.append("H=H; // exit label can't be empty lmao")
         self.code.append("}")
 
     def add_func_call(self, func_id):

@@ -32,8 +32,21 @@ def start_opt():
 
     with io.open('opt_code.c', 'r', encoding='utf8', newline='\n') as fin:
         input_code = fin.read()
+
     f_opt, code = perform_optimization(input_code)
-    pass
+    path = 'C:\\Users\\Matus\\Documents\\USAC\\Compi2\\Proyecto2\\c-interp\\main-o.c'
+    with io.open(path, 'w', encoding='utf8', newline='\n') as fout:
+        fout.write(code)
+
+    print("---------------------------------------------------------------------------------------------------")
+    print("---------------------------------------------------------------------------------------------------")
+    print("---------------------------------------------------------------------------------------------------")
+    print("---------------------------------------------------------------------------------------------------")
+    for opted in f_opt:
+        a, b, c, d = opted.split("<->")
+        print(f'{a}::{b}            {c}      -> {d}')
+
+
 
 def start():  # FIXME this should be replaced with frontend sending the code
     # f = open("code.rs", "r", encoding='utf-8')
@@ -178,13 +191,16 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
             # raise SemanticError(error_msg, -1, -1)
 
         # TODO "Apartir de aqui todo vale madre"
-        final_generator.add_label([main_start])
+        # final_generator.add_label([main_start])
         global_config.main_environment.is_function_env = True
-        final_generator.combine_with(synthetic_call.execute(global_config.main_environment).generator)
+        # final_generator.combine_with(synthetic_call.execute(global_config.main_environment).generator)
         final_generator.add_comment("<<<<<<<<<<<<<<<<<<<<End of program>>>>>>>>>>>>>>>>>>")
 
         _symbol_table = main_func.environment.symbol_table
-        final_generator.set_as_final_code()
+        pp = Generator(None)
+        pp.set_as_final_code()
+        final_generator.combine_with(pp)
+        # final_generator.set_as_final_code()
         # print(final_generator.get_code())
 
         #
@@ -195,14 +211,17 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
         with io.open(path, 'w', encoding='utf8', newline='\n') as fout:
             fout.write(final_generator.get_code())
 
+        with io.open('opt_code.c', 'w', encoding='utf8', newline='\n') as fout:
+            fout.write(final_generator.get_code())
+
         print("-------------------------------------------------------------------------------------------------------")
 
         # _symbol_table = main_func.environment.symbol_table  # TODO delete me, debug only
         # _function_list = global_config.function_list  # TODO delete me, debug only
         # print("Resulting function list:")
         # print(function_list)
-        print("Resulting symbol table:")
-        symbol_table = global_config.generate_symbol_table(instruction_set, "Main")
+        # print("Resulting symbol table:")
+        # symbol_table = global_config.generate_symbol_table(instruction_set, "Main")
 
         print("-------------------------------------------------------------------------------------------------------")
         print("-------------------------------------------------------------------------------------------------------")
@@ -213,11 +232,30 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
         global_config.console_output += "\n"
         global_config.console_output += "----------------------------------------------------------------------------\n"
         global_config.console_output += "----------------------------------------------------------------------------\n"
-        global_config.console_output += "------------------INITIAL COMPILING FINISHED-------------------\n"
         global_config.console_output += "----------------------------------------------------------------------------\n"
         global_config.console_output += "----------------------------------------------------------------------------\n"
+        global_config.console_output += "Initial compiling finished, exit code: 0\n"
 
-        # f_opt, code = perform_optimization(final_generator.get_code())
+        opt_list, opted_code = perform_optimization(final_generator.get_code())
+
+        print("-------------------------------------------------------------------------------------------------------")
+        print("-------------------------------------------------------------------------------------------------------")
+        print("-------------------------------------------OPTIMIZATION FINISHED---------------------------------------")
+        print("                                           OPTIMIZATIONS MADE: " + str(len(opt_list)))
+        print("-------------------------------------------------------------------------------------------------------")
+        print("-------------------------------------------------------------------------------------------------------")
+
+        global_config.console_output += "\n"
+        global_config.console_output += "----------------------------------------------------------------------------\n"
+        global_config.console_output += "----------------------------------------------------------------------------\n"
+        global_config.console_output += "----------------------------------------------------------------------------\n"
+        global_config.console_output += "----------------------------------------------------------------------------\n"
+        global_config.console_output += f"Optimization finished, {len(opt_list)} optimizations made"
+        global_config.console_output += "Program finished, exit code: 0\n"
+
+        path = 'C:\\Users\\Matus\\Documents\\USAC\\Compi2\\Proyecto2\\c-interp\\main-o.c'
+        with io.open(path, 'w', encoding='utf8', newline='\n') as fout:
+            fout.write(opted_code)
 
         return {
             "console_output": global_config.console_output,
@@ -294,42 +332,49 @@ def perform_optimization(code) -> Tuple[list, str]:
 
     opt_code = code
     func_names = re.findall(r'void fn_[^(]*(?=\(\))', opt_code)
-
+    resulting_functions = []
+    headers = re.search(r'([\s\S]*double t0[^;]*;)', code).group(1)
     for func in func_names:
         mm = f'(?<={func}\(\){{)([^}}]*)(?=}})'
         print(mm)
         func_code = re.search(mm, opt_code).group(0)
 
-        blocks = []
-        while True:
-            label = re.search(r'L[0-9]*:', func_code)
-            jump = re.search(r'goto L[0-9]*;', func_code)
-            if label is None and jump is None:
-                blocks.append(func_code)
-                break
+        blocks = [func_code]
 
-            label_i, label_j = 0, 0
-            jump_i, jump_j = 0, 0
-            if label is not None:
-                label_i, label_j = label.span()
-            if jump is not None:
-                jump_i, jump_j = jump.span()
-
-            if label_i < jump_i and label is not None:
-                blocks.append(func_code[:label_j])
-                func_code = func_code[label_j:]
-                continue
-
-            blocks.append(func_code[:jump_j])
-            func_code = func_code[jump_j:]
+        separators = [r'L[0-9]*:', r'goto L[0-9]*;', r'[a-zA-Z0-9_]*\(\);', 'return;']
+        for reg_exp in separators:
+            # Separate by labels
+            sub_set = []
+            for block in blocks:
+                while True:
+                    matched = re.search(reg_exp, block)
+                    if matched is None:
+                        sub_set.append(block)
+                        break
+                    _, match_j = matched.span()
+                    sub_set.append(block[:match_j])
+                    block = block[match_j:]
+            blocks = sub_set
 
         optimized_blocks = []
+        i = 0
         for block in blocks:
-            block_result = opt.optimize_local_rule_1(block)
+            print(f"opting block#{i}")
+            i += 1
+            partial = opt.optimize_local_rule_1(block, code)
+            optimized_blocks.append(partial)
 
+        the_code = "\n".join(optimized_blocks)
+        the_f = f'{func}(){{\n{the_code}\n}}'
+        resulting_functions.append(the_f)
 
+    opt_opt_code = "\n".join(resulting_functions)
+    gg = Generator(None)
+    gg.add_main_enclosure()
+    si_salio_este_semestre = f'{headers}\n{opt_opt_code}\n{gg.get_code()}'
+    si_salio_este_semestre = re.sub('goto(L[0-9]+);', lambda m: f'goto {m.group(1)};', si_salio_este_semestre)
 
-    return opt.reports, opt_code
+    return opt.reports, si_salio_este_semestre
 
 
 
