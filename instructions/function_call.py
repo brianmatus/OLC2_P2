@@ -11,7 +11,7 @@ from errors.semantic_error import SemanticError
 
 from expressions.array_expression import ArrayExpression
 
-from global_config import function_list, log_semantic_error
+import global_config
 from instructions.function_declaration import FunctionDeclaration
 from generator import Generator
 
@@ -34,11 +34,11 @@ class FunctionCallI(Instruction):
 
     def execute(self, env: Environment) -> ExecReturn:
 
-        func: FunctionDeclaration = function_list.get(self.function_id)
+        func: FunctionDeclaration = global_config.function_list.get(self.function_id)
 
         if func is None:
             error_msg = f"No existe una función con el nombre {self.function_id}"
-            log_semantic_error(error_msg, self.line, self.column)
+            global_config.log_semantic_error(error_msg, self.line, self.column)
             raise SemanticError(error_msg, self.line, self.column)
 
         # print("------------------------------------FUNC CALL------------------------------------")
@@ -48,7 +48,7 @@ class FunctionCallI(Instruction):
 
         if len(self.params) != len(func.params):
             error_msg = f"La función {self.function_id} fue llamada con un numero incorrecto de argumentos"
-            log_semantic_error(error_msg, self.line, self.column)
+            global_config.log_semantic_error(error_msg, self.line, self.column)
             raise SemanticError(error_msg, self.line, self.column)
 
         # intermediate_env = Environment(main_environment)
@@ -91,7 +91,7 @@ class FunctionCallI(Instruction):
                 error_msg = f"La función {self.function_id} fue llamada con un tipo incorrecto de argumento. " \
                             f"Arg #{i + 1}" \
                             f"({param.expression_type.name} <-> {given.expression_type.name})"
-                log_semantic_error(error_msg, self.line, self.column)
+                global_config.log_semantic_error(error_msg, self.line, self.column)
                 raise SemanticError(error_msg, self.line, self.column)
 
             # c = param.is_array and not self.params[i].as_reference
@@ -107,7 +107,7 @@ class FunctionCallI(Instruction):
                     error_msg = f"La función {self.function_id} fue llamada con un tipo incorrecto de argumento. " \
                                 f"Arg #{i + 1}" \
                                 f"({param.content_type.name} <-> {given.content_type.name})"
-                    log_semantic_error(error_msg, self.line, self.column)
+                    global_config.log_semantic_error(error_msg, self.line, self.column)
                     raise SemanticError(error_msg, self.line, self.column)
 
             # Non mutable array was passed as mutable using &mut
@@ -116,7 +116,7 @@ class FunctionCallI(Instruction):
                     print(f'u r not actually mutable, liar!')
                     error_msg = f"La función {self.function_id} fue llamada con un array no mutable, como mutable. " \
                                 f"Arg #{i + 1}"
-                    log_semantic_error(error_msg, self.line, self.column)
+                    global_config.log_semantic_error(error_msg, self.line, self.column)
                     raise SemanticError(error_msg, self.line, self.column)
 
                 if isinstance(self.params[i].expr, ArrayExpression):
@@ -124,7 +124,7 @@ class FunctionCallI(Instruction):
                         error_msg = f"La función {self.function_id} fue llamada con un tipo incorrecto de argumento. " \
                                     f"Arg #{i + 1} Array "\
                                     f"({param.content_type.name} <-> {given.content_type.name})"
-                        log_semantic_error(error_msg, self.line, self.column)
+                        global_config.log_semantic_error(error_msg, self.line, self.column)
                         raise SemanticError(error_msg, self.line, self.column)
 
                 else:
@@ -132,7 +132,7 @@ class FunctionCallI(Instruction):
                         error_msg = f"La función {self.function_id} fue llamada con un tipo incorrecto de argumento. " \
                                     f"Arg #{i + 1}" \
                                     f"({param.content_type.name} <-> {given.content_type.name})"
-                        log_semantic_error(error_msg, self.line, self.column)
+                        global_config.log_semantic_error(error_msg, self.line, self.column)
                         raise SemanticError(error_msg, self.line, self.column)
 
             final_generator.add_comment(f"-----Arg #{i}-----")

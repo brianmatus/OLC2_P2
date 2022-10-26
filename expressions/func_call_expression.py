@@ -7,7 +7,7 @@ from elements.value_tuple import ValueTuple
 from abstract.expression import Expression
 from returns.exec_return import ExecReturn
 
-from global_config import function_list
+import global_config
 from instructions.function_declaration import FunctionDeclaration
 
 from instructions.function_call import FunctionCallI
@@ -27,7 +27,7 @@ class FunctionCallE(Expression):
         t_r = gen.new_temp(True)
 
         result: ExecReturn = self.delegate.execute(environment)
-        fn: FunctionDeclaration = function_list.get(self.delegate.function_id)
+        fn: FunctionDeclaration = global_config.function_list.get(self.delegate.function_id)
 
         gen.combine_with(result.generator)
 

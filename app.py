@@ -5,6 +5,7 @@ from xml.dom import minidom
 import base64
 import re
 import json
+import global_config
 
 app = Flask(__name__)
 
@@ -27,6 +28,17 @@ def hello():
     print(request)
     a = request.values["code"]
     print(a)
+    from elements.c_env import Environment
+    global_config.main_environment = Environment(None)
+
+    global_config.lexic_error_list = []
+    global_config.syntactic_error_list = []
+    global_config.semantic_error_list = []
+    global_config.tmp_symbol_table = []
+    global_config.function_list = {}
+    # func list
+    global_config.console_output = ""
+    global_config.function_3ac_code = []
 
     r = main.parse_code(a)
     if "optimization" not in r.keys():

@@ -189,3 +189,7 @@ def find_column(token):
 
 
 lexer = lex.lex()
+
+
+def redefine_lex():
+    lexer = lex.lex()

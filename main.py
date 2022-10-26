@@ -84,9 +84,14 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
     global_config.syntactic_error_list = []
     global_config.semantic_error_list = []
     global_config.tmp_symbol_table = []
+    global_config.tmp_i = 3
+    global_config.label_i = 0
+
     # global_config.function_list = {}
     # func list
     global_config.console_output = ""
+    import analysis.lexer
+    analysis.lexer.redefine_lex()
     try:
         instruction_set = parser.parse(code_string, tracking=True)
 
@@ -368,9 +373,8 @@ def perform_optimization(code) -> Tuple[list, str]:
                 opt = Optimizer()
                 partial = opt.optimize_local_rule_1(partial, code)
                 partial = opt.optimize_local_rule_2(partial, code)
-                # rule 2
-                # rule 3
-                # rule 4
+                partial = opt.optimize_local_rule_4(partial, code)
+                partial = opt.optimize_local_rule_4_1(partial, code)
                 if len(opt.reports) == 0:
                     break
                 final_report_list = final_report_list + opt.reports
@@ -392,8 +396,8 @@ def perform_optimization(code) -> Tuple[list, str]:
 
 
 if __name__ == '__main__':
-    start()
-    # start_opt()
+    # start()
+    start_opt()
 
     # x = 38
     # print(newtons_method_sqrt(x, x / 2))
