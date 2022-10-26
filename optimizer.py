@@ -68,6 +68,11 @@ class Optimizer:
                 if fn_call is not None:
                     continue
 
+                copy_i = re.search('([a-zA-Z0-9_]*)=([a-zA-Z0-9_]*);', inst)
+                if copy_i is not None:
+                    continue
+
+
                 xx = re.search('([a-zA-Z0-9_]*)=([^;]*);', inst)
                 if xx is None:
                     pass
@@ -113,6 +118,130 @@ class Optimizer:
                         instructions[j] = new_inst
                         self.reports.append(f"Local<->Regla 1: Sub-expresiones comunes<->{rr.group(1)}<->{new_inst}")
                         change_made = True
+
+        return "\n".join(instructions)
+
+    def optimize_local_rule_2(self, code: str, original_total_code) -> str:
+
+        instructions = code.replace("\r", "").replace(" ", "").strip().split("\n")
+        # instructions = code.replace("\r", "").strip().split("\n")
+        instructions = [x for x in instructions if x]
+        change_made = True
+        while change_made is True:
+            change_made = False
+
+            # Reverse lookup tends to remove more common expression
+            for i in range(len(instructions)-1, -1, -1):
+            # for i in range(len(instructions)):
+                inst = instructions[i]
+
+                # Should not be searched nor optimized
+                label = re.search(r'L[0-9]*:', inst)
+                if label is not None:
+                    continue
+
+                # Should not be searched but it SHOULD be optimized (in inner loop)
+                goto = re.search(r'goto', inst)
+                if goto is not None:
+                    continue
+
+                # STACK assignments are not optimized (yet??)
+                stack = re.search(r'STACK', inst)
+                if stack is not None:
+                    continue
+                    # TODO implement
+                    # s_i, _ = stack.span()
+                    # if s_i == 0:
+                    #     continue
+
+                # HEAP assignments are not optimized (yet??)
+                heap = re.search(r'HEAP', inst)
+                if heap is not None:
+                    continue
+                    # TODO implement
+                    # s_i, _ = stack.span()
+                    # if s_i == 0:
+                    #     continue
+
+                return_i = re.search(r'return', inst)
+                if return_i is not None:
+                    continue
+
+                print_i = re.search(r'print', inst)
+                if print_i is not None:
+                    continue
+
+                fn_call = re.search(r'[a-zA-Z0-9_]*\(\);', inst)
+                if fn_call is not None:
+                    continue
+
+                copy_i = re.search('([a-zA-Z0-9_]*)=([a-zA-Z0-9_]*)([+\-*/%])([a-zA-Z0-9_]*);', inst)
+                if copy_i is not None:
+                    continue
+
+
+                xx = re.search('([a-zA-Z0-9_]*)=([a-zA-Z0-9_]*);', inst)
+                if xx is None:
+                    continue
+                the_assigned_tmp, the_copied_tmp = xx.groups()
+                # tmp_was_reassigned = False
+
+                if the_assigned_tmp == "H":
+                    continue
+
+                if the_assigned_tmp == the_copied_tmp:
+                    new_inst = f'//code-removed-by-local-rule-2-(i.e:{xx.group(0)})'
+                    instructions[i] = new_inst
+                    self.reports.append(f"Local<->Regla 2: Propagacion de copias (mismo)<->{xx.group(0)}<->{new_inst}")
+                    change_made = True
+                    continue  # Change for t_b will be made in next cycle
+
+
+
+                for j in range(i+1, len(instructions)):
+                    cpr_inst = instructions[j]
+
+                    # Should not be optimized
+                    if re.search(r'if\(', inst) is not None:
+                        continue
+
+                    # Should not be searched nor optimized
+                    label = re.search(r'L[0-9]*:', cpr_inst)
+                    if label is not None:
+                        continue
+
+                    # Should not be searched but it SHOULD be optimized (in inner loop)
+                    goto = re.search(r'goto', cpr_inst)
+                    if goto is not None:
+                        continue
+
+                    return_i = re.search(r'return', inst)
+                    if return_i is not None:
+                        continue
+
+                    rr = re.search('([a-zA-Z0-9_]*)=([a-zA-Z0-9_]*)([+\-*/%])([a-zA-Z0-9_]*);', cpr_inst)
+                    if rr is None:
+                        continue
+                    cpr_the_tmp, t_a, t_operation, t_b = rr.groups()
+
+                    # If tmp was reassigned, same expression is no longer valid
+                    if the_assigned_tmp == cpr_the_tmp or the_copied_tmp == cpr_the_tmp:
+                        # tmp_was_reassigned = True
+                        break
+
+                    if t_a == the_assigned_tmp:
+                        new_inst = f'{cpr_the_tmp}={the_copied_tmp}{t_operation}{t_b};'
+                        instructions[j] = new_inst
+                        self.reports.append(f"Local<->Regla 2: Propagacion de copias<->{rr.group(0)}<->{new_inst}")
+                        change_made = True
+                        continue  # Change for t_b will be made in next cycle
+
+                    if t_b == the_assigned_tmp:
+                        new_inst = f'{cpr_the_tmp}={t_a}{t_operation}{the_copied_tmp};'
+                        instructions[j] = new_inst
+                        self.reports.append(f"Local<->Regla 2: Propagacion de copias<->{rr.group(0)}<->{new_inst}")
+                        change_made = True
+                        continue
 
         return "\n".join(instructions)
 

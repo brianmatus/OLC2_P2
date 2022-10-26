@@ -31,7 +31,7 @@ def hello():
     r = main.parse_code(a)
     if "optimization" not in r.keys():
         print("OPT TABLE NOT POPULATED")
-        r["optimization"] = [["a<->b<->c"]]
+        r["optimization"] = ["a<->b<->c<->d"]
 
     return jsonify({"result": r})
     # return "a"

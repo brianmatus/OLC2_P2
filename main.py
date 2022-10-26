@@ -30,7 +30,8 @@ from typing import Tuple
 
 def start_opt():
 
-    with io.open('opt_code.c', 'r', encoding='utf8', newline='\n') as fin:
+    path = 'C:\\Users\\Matus\\Documents\\USAC\\Compi2\\Proyecto2\\c-interp\\main.c'
+    with io.open(path, 'r', encoding='utf8', newline='\n') as fin:
         input_code = fin.read()
 
     f_opt, code = perform_optimization(input_code)
@@ -209,10 +210,10 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
         # output_file.close()
         path = 'C:\\Users\\Matus\\Documents\\USAC\\Compi2\\Proyecto2\\c-interp\\main.c'
         with io.open(path, 'w', encoding='utf8', newline='\n') as fout:
-            fout.write(final_generator.get_code())
+            fout.write(final_generator.get_code().replace("+ -", "- "))
 
         with io.open('opt_code.c', 'w', encoding='utf8', newline='\n') as fout:
-            fout.write(final_generator.get_code())
+            fout.write(final_generator.get_code().replace("+ -", "- "))
 
         print("-------------------------------------------------------------------------------------------------------")
 
@@ -236,7 +237,7 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
         global_config.console_output += "----------------------------------------------------------------------------\n"
         global_config.console_output += "Initial compiling finished, exit code: 0\n"
 
-        opt_list, opted_code = perform_optimization(final_generator.get_code())
+        opt_list, opted_code = perform_optimization(final_generator.get_code().replace("+ -", "- "))
 
         print("-------------------------------------------------------------------------------------------------------")
         print("-------------------------------------------------------------------------------------------------------")
@@ -250,7 +251,7 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
         global_config.console_output += "----------------------------------------------------------------------------\n"
         global_config.console_output += "----------------------------------------------------------------------------\n"
         global_config.console_output += "----------------------------------------------------------------------------\n"
-        global_config.console_output += f"Optimization finished, {len(opt_list)} optimizations made"
+        global_config.console_output += f"Optimization finished, {len(opt_list)} optimizations made\n"
         global_config.console_output += "Program finished, exit code: 0\n"
 
         path = 'C:\\Users\\Matus\\Documents\\USAC\\Compi2\\Proyecto2\\c-interp\\main-o.c'
@@ -264,7 +265,7 @@ def parse_code(code_string: str) -> dict:  # -> ParseResult
             "semantic_errors": global_config.semantic_error_list,
             "symbol_table":
             global_config.tmp_symbol_table + global_config.generate_symbol_table(instruction_set, "Main"),
-            # "optimization": f_opt
+            "optimization": opt_list
         }
 
         # return [global_config.lexic_error_list, global_config.syntactic_error_list,
@@ -328,7 +329,7 @@ def newtons_method_sqrt(x, x0):
 
 def perform_optimization(code) -> Tuple[list, str]:
 
-    opt = Optimizer()
+    final_report_list = []
 
     opt_code = code
     func_names = re.findall(r'void fn_[^(]*(?=\(\))', opt_code)
@@ -361,7 +362,19 @@ def perform_optimization(code) -> Tuple[list, str]:
         for block in blocks:
             print(f"opting block#{i}")
             i += 1
-            partial = opt.optimize_local_rule_1(block, code)
+
+            partial = block
+            while True:
+                opt = Optimizer()
+                partial = opt.optimize_local_rule_1(partial, code)
+                partial = opt.optimize_local_rule_2(partial, code)
+                # rule 2
+                # rule 3
+                # rule 4
+                if len(opt.reports) == 0:
+                    break
+                final_report_list = final_report_list + opt.reports
+
             optimized_blocks.append(partial)
 
         the_code = "\n".join(optimized_blocks)
@@ -374,7 +387,7 @@ def perform_optimization(code) -> Tuple[list, str]:
     si_salio_este_semestre = f'{headers}\n{opt_opt_code}\n{gg.get_code()}'
     si_salio_este_semestre = re.sub('goto(L[0-9]+);', lambda m: f'goto {m.group(1)};', si_salio_este_semestre)
 
-    return opt.reports, si_salio_este_semestre
+    return final_report_list, si_salio_este_semestre
 
 
 

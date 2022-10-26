@@ -2148,7 +2148,3 @@ def add_number_unicode_to_heap(t_n: str, generator: Generator):
         generator.add_goto(already_added)
         generator.add_label([t_n_plus_1])
     generator.add_label([already_added])
-
-
-
-

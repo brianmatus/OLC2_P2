@@ -50,7 +50,8 @@ function makeOptTableHTML(myArray) {
         result += "<td>"+element[0]+"</td>";
         result += "<td>"+element[1]+"</td>";
         result += "<td>"+element[2]+"</td>";
-        
+        result += "<td>"+element[3]+"</td>";
+
         result += "</tr>";
     }
     result += "</table>";
